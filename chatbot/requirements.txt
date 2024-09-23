@@ -1,6 +1,7 @@
 opencv-python
 #openvino-dev
-openvino
+#openvino
+openvino-genai>=2024.3.0
 utils
 tqdm
 scikit-learn
