@@ -637,11 +637,11 @@ def run_object_detection(
 
 def main(argv):
     
-    model_file=Path("model")/ "gelan-c_int8.xml"
+    model_file=Path("model")/ "yolo11n.xml"
     
     quantized_model = core.read_model(model_file)
     weights = model_file
-    metadata = yaml_load(Path("model")/ "gelan-c_int8.yaml")
+    metadata = yaml_load(Path("model")/ "metadata.yaml")
     global NAMES
     NAMES = metadata["names"]
 
