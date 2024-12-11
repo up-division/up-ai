@@ -650,9 +650,13 @@ def main(argv):
     else:
         if(argv[1].isdigit()):
             VIDEO_SOURCE = int(argv[1])
+        else:
+            VIDEO_SOURCE = argv[1]
 
-
-    os.system("cls")
+    if(sys.platform.startswith('linux')):
+        os.system("clear")
+    elif(sys.platform.startswith('win32')):
+        os.system("cls")
     
     while(1):
         print("Select you wanted running device:")
@@ -671,12 +675,17 @@ def main(argv):
             print("select " +device_dict[str(sel_dev)]+ " to running" )
             break
         else:
-            os.system("cls")
+            
+            if(sys.platform.startswith('linux')):
+                os.system("clear")
+            elif(sys.platform.startswith('win32')):
+                os.system("cls")
+                
             print("Not invild input!!!!!!!!!!!!!!!!!")
         
     run_object_detection(
         source=VIDEO_SOURCE,
-        flip=True,
+        flip=False,
         use_popup=True,
         model=quantized_model,
         device=device_dict[str(sel_dev)],
