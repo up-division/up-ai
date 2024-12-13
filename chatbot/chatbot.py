@@ -310,13 +310,13 @@ def main(argv):
     stop_tokens = model_configuration.get("stop_tokens")
     tokenizer_kwargs = model_configuration.get("tokenizer_kwargs", {})
 
-    int4_model_dir=Path(str(model_list[model_sel]))/ "INT4_compressed_weights"
+    int4_model_dir=Path(__file__).parent/str(model_list[model_sel])/"INT4_compressed_weights"
 
     pt_model_name = model_list[model_sel].split("-")[0]
 
     ov_config = {"PERFORMANCE_HINT": "LATENCY", "NUM_STREAMS": "1", "CACHE_DIR": ""}
     model_dir=int4_model_dir
-    
+
     examples = english_examples
     tok = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
     text_processor = model_configuration.get("partial_text_processor", default_partial_text_processor)
