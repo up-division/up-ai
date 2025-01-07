@@ -1,0 +1,408 @@
+@echo off
+set "currentDir=%~dp0" 
+set "hailodemoDir=%currentDir%\app\hailo\detection_with_tracker"
+set "matched_instances=Intel;"
+REM 定義 Hailo 和 Nvidia 類的 Instance ID 列表
+set "Hailo=2864"
+set "Nvidia=24FA"
+
+REM 臨時文件用於存儲 pnputil 的輸出
+set "tempfile=%temp%\pnputil_output.txt"
+
+setlocal enabledelayedexpansion
+pnputil /enum-devices /connected > "%tempfile%"
+set "com_instance_ids=Hailo;Nvidia"
+REM 遍歷所有類別
+set "chatbot_matched_instances=!matched_instances!"
+set "obj_matched_instances=!matched_instances!"
+for %%I in (%com_instance_ids%) do (
+    REM 動態展開每個類別的變數值
+    set "current_list=!%%I!"
+    
+    REM 遍歷該類別中的每個 Instance ID
+    for %%J in (!current_list!) do (
+        REM 假設文件 tempfile.txt 中需要匹配
+        @REM set "device_instances=PCI\VEN_8086&DEV_%%J"
+        findstr /c:"%%J" "%tempfile%" >nul
+        if !errorlevel! equ 0 (
+            REM 如果匹配成功，將該 Instance ID 添加到 matched_instances
+            set "obj_matched_instances=!obj_matched_instances!%%I;"
+        )
+    )
+)
+
+:main_menu
+cls
+echo ====================================
+echo          Function Menu
+echo ====================================
+echo 1. Object Detection - vedio
+echo 2. Object Detection - camera
+echo 3. Chatbot
+echo 0. exit
+echo ====================================
+set /p choice="Please input number: "
+
+if "%choice%"=="1" goto obj_detect
+if "%choice%"=="2" goto obj_detect1
+if "%choice%"=="3" goto chatbot
+if "%choice%"=="0" goto exit
+echo unknow option,please rechoose!
+pause
+goto main_menu
+
+:obj_detect
+cls
+set "counter=1"
+echo ============================================
+echo  Select Hardware (Object Detection - vedio)
+echo ============================================
+if defined obj_matched_instances (
+    for %%M in (!obj_matched_instances!) do (
+        echo !counter!.%%M
+        set /a counter+=1
+    )
+) else (
+    echo No matching Instance IDs found.
+)
+echo 0. exit
+echo ============================================
+set /p hardware="Please input number: "
+REM 檢查輸入是否為數字
+for /F "delims=0123456789" %%A in ("%hardware%") do (
+    echo Invalid input. Please enter a number.
+    goto :input
+)
+if %hardware% GTR !counter! (
+    echo Invalid input.
+    goto :input
+) else if %hardware% LSS 0 (
+    echo Invalid input.
+    goto :input
+)
+if "%hardware%"=="0" (
+    goto main_menu
+)
+REM 映射數值
+set "current_index=1"
+for %%I in (%obj_matched_instances%) do (
+    if !current_index! equ %hardware% (
+        @REM echo The second value is: %%I
+        set "demotype=%%I"
+        goto :loop_end
+    )
+    set /a current_index+=1
+)
+:loop_end
+
+if "!demotype!"=="Intel" (
+    if exist "%currentDir%/env/ov-obj_det/Scripts/activate.bat" (
+        call %currentDir%/env/ov-obj_det/Scripts/activate.bat
+    ) else (
+        echo This demo environment not install,please rechoose!
+        pause
+        goto obj_detect
+    )
+	echo Start Object Detect......
+    	Rem cd %currentDir%/app/openvino/obj-detect/
+	cd  %~dp0\..\obj-detect
+	Rem python demo.py %currentDir%\video\hailo_obj_video.mp4
+	python demo.py %currentDir%\video\hailo_obj_video.mp4
+    cd %currentDir%
+) else if "!demotype!"=="Hailo" (
+    if exist "%currentDir%/env/hailo-obj_det/Scripts/activate.bat" (
+        call %currentDir%/env/hailo-obj_det/Scripts/activate.bat
+    ) else (
+        echo This demo environment not install,please rechoose!
+        pause
+        goto obj_detect
+    )
+	echo Start detection with tracker...
+	python %hailodemoDir%\detection_with_tracker.py -n %currentDir%\model\yolov5m_wo_spp_60p.hef -i %currentDir%\video\hailo_obj_video.mp4 -l %hailodemoDir%\coco.txt
+
+) else if "!demotype!"=="Nvidia" (
+    if exist "%currentDir%/env/torch_yolov11/Scripts/activate.bat" (
+        call %currentDir%/env/torch_yolov11/Scripts/activate.bat
+    ) else (
+        echo This demo environment not install,please rechoose!
+        pause
+        goto obj_detect
+    )
+    echo Start Yolov11 by pytorch!
+    cd %currentDir%\app\pytorch
+    @REM yolo predict model=yolo11n.pt source='https://ultralytics.com/images/bus.jpg'
+    python yolov11_predict.py
+    cd %currentDir%
+
+) else if "!demotype!"=="0" (
+    goto main_menu
+) else (
+    echo unknow option,please rechoose!
+    pause
+    goto obj_detect
+)
+pause
+goto obj_detect
+
+:obj_detect1
+cls
+set "counter=1"
+echo ============================================
+echo  Select Hardware (Object Detection - camera)
+echo ============================================
+if defined obj_matched_instances (
+    for %%M in (!obj_matched_instances!) do (
+        echo !counter!.%%M
+        set /a counter+=1
+    )
+) else (
+    echo No matching Instance IDs found.
+)
+echo 0. exit
+echo ============================================
+set /p hardware="Please input number: "
+REM 檢查輸入是否為數字
+for /F "delims=0123456789" %%A in ("%hardware%") do (
+    echo Invalid input. Please enter a number.
+    goto :input
+)
+if %hardware% GTR !counter! (
+    echo Invalid input.
+    goto :input
+) else if %hardware% LSS 0 (
+    echo Invalid input.
+    goto :input
+)
+if "%hardware%"=="0" (
+    goto main_menu
+)
+REM 映射數值
+set "current_index=1"
+for %%I in (%obj_matched_instances%) do (
+    if !current_index! equ %hardware% (
+        @REM echo The second value is: %%I
+        set "demotype=%%I"
+        goto :loop_end
+    )
+    set /a current_index+=1
+)
+:loop_end
+
+if "!demotype!"=="Intel" (
+    if exist "%currentDir%/env/ov-obj_det/Scripts/activate.bat" (
+        call %currentDir%/env/ov-obj_det/Scripts/activate.bat
+    ) else (
+        echo This demo environment not install,please rechoose!
+        pause
+        goto obj_detect1
+    )
+	echo Start Object Detect......
+    REM cd %currentDir%/app/openvino/obj-detect/
+    cd  %~dp0\..\obj-detect
+
+	python demo.py 0
+    cd %currentDir%
+) else if "!demotype!"=="Hailo" (
+    if exist "%currentDir%/env/hailo-obj_det/Scripts/activate.bat" (
+        call %currentDir%/env/hailo-obj_det/Scripts/activate.bat
+    ) else (
+        echo This demo environment not install,please rechoose!
+        pause
+        goto obj_detect1
+    )
+	echo Start detection with tracker...
+	python %hailodemoDir%/detection_with_tracker.py -n %currentDir%\model\yolov5m_wo_spp_60p.hef -l %hailodemoDir%\coco.txt
+
+) else if "!demotype!"=="Nvidia" (
+    if exist "%currentDir%/env/torch_yolov11/Scripts/activate.bat" (
+        call %currentDir%/env/torch_yolov11/Scripts/activate.bat
+    ) else (
+        echo This demo environment not install,please rechoose!
+        pause
+        goto obj_detect1
+    )
+    echo Start Yolov11 by pytorch!
+    cd %currentDir%\app\pytorch
+    @REM yolo predict model=yolo11n.pt source='https://ultralytics.com/images/bus.jpg'
+    python yolov11_predict.py vedio
+    cd %currentDir%
+
+) else if "!demotype!"=="0" (
+    goto main_menu
+) else (
+    echo unknow option,please rechoose!
+    pause
+    goto obj_detect1
+)
+pause
+goto obj_detect1
+
+:chatbot
+cls
+set "counter=1"
+echo ====================================
+echo       Select Hardware (Chatbot)
+echo ====================================
+if defined chatbot_matched_instances (
+    for %%M in (!chatbot_matched_instances!) do (
+        echo !counter!.%%M
+        set /a counter+=1
+    )
+) else (
+    echo No matching Instance IDs found.
+)
+echo 0. exit
+echo ============================================
+set /p hardware="Please input number: "
+REM 檢查輸入是否為數字
+for /F "delims=0123456789" %%A in ("%hardware%") do (
+    echo Invalid input. Please enter a number.
+    goto :input
+)
+if %hardware% GTR !counter! (
+    echo Invalid input.
+    goto :input
+) else if %hardware% LSS 0 (
+    echo Invalid input.
+    goto :input
+)
+if "%hardware%"=="0" (
+    goto main_menu
+)
+REM 映射數值
+set "current_index=1"
+for %%I in (%chatbot_matched_instances%) do (
+    if !current_index! equ %hardware% (
+        @REM echo The second value is: %%I
+        set "demotype=%%I"
+        goto :loop_end
+    )
+    set /a current_index+=1
+)
+:loop_end
+
+if "%demotype%"=="Intel" (
+    if exist "%currentDir%/env/chatbot/Scripts/activate.bat" (
+        call %currentDir%/env/chatbot/Scripts/activate.bat
+    ) else (
+        echo This demo environment not install,please rechoose!
+        pause
+        goto chatbot
+    )
+	echo Start Chatbot......
+    Rem cd %currentDir%/app/openvino/chatbot/
+	cd %~dp0\..\chatbot
+
+	python chatbot.py
+    cd %currentDir%
+) else if "%hardware%"=="0" (
+    goto main_menu
+) else (
+    echo unknow option,please rechoose!
+    pause
+    goto chatbot
+)
+pause
+goto chatbot
+
+
+
+
+
+
+
+
+
+
+
+
+@REM @echo off
+@REM setlocal enabledelayedexpansion
+
+@REM REM 定義 A 和 B 類的 Instance ID 列表
+@REM set "Hailo=3E92;2864"
+@REM set "Nvidia_Pytorch=3E92;24FA"
+
+@REM REM 臨時文件用於存儲 pnputil 的輸出
+@REM set "tempfile=%temp%\pnputil_output.txt"
+
+@REM REM 執行 pnputil 並將輸出重定向到臨時文件
+@REM pnputil /enum-devices /connected > "%tempfile%"
+
+@REM REM 初始化存儲匹配的 Instance IDs
+@REM set "matched_instances=Intel;"
+@REM set "Hailo=3E92;2864"
+@REM set "Nvidia=3E92;24FA"
+@REM REM 將 A 和 B 合併到總列表中
+@REM set "com_instance_ids=Hailo;Nvidia"
+
+@REM REM 遍歷所有類別
+@REM for %%I in (%com_instance_ids%) do (
+@REM     REM 動態展開每個類別的變數值
+@REM     set "current_list=!%%I!"
+    
+@REM     REM 遍歷該類別中的每個 Instance ID
+@REM     for %%J in (!current_list!) do (
+@REM         REM 假設文件 tempfile.txt 中需要匹配
+@REM         set "device_instances=PCI\VEN_8086&DEV_%%J"
+@REM         findstr /c:"%%J" "%tempfile%" >nul
+@REM         if !errorlevel! equ 0 (
+@REM             REM 如果匹配成功，將該 Instance ID 添加到 matched_instances
+@REM             set "matched_instances=!matched_instances!%%I;"
+@REM         )
+@REM     )
+@REM )
+
+@REM REM 打印所有匹配到的 Instance IDs
+@REM set "counter=1"
+@REM if defined matched_instances (
+@REM     echo Matched Instance IDs:
+@REM     for %%M in (!matched_instances!) do (
+@REM         echo !counter!.%%M
+@REM         set /a counter+=1
+@REM     )
+@REM ) else (
+@REM     echo No matching Instance IDs found.
+@REM )
+@REM :input
+@REM set /p hardware="Please input number: "
+@REM REM 確定輸入是否正確
+@REM @REM if %hardware%>!counter! || %hardware%<1
+@REM @REM     echo please input right value
+@REM REM 檢查輸入是否為數字
+@REM for /F "delims=0123456789" %%A in ("%hardware%") do (
+@REM     echo Invalid input. Please enter a number.
+@REM     goto :input
+@REM )
+@REM if %hardware% GTR !counter! (
+@REM     echo Invalid input.
+@REM     goto :input
+@REM ) else if %hardware% LSS 1 (
+@REM     echo Invalid input.
+@REM     goto :input
+@REM )
+
+@REM REM Map value
+@REM set "current_index=1"
+@REM for %%I in (%matched_instances%) do (
+@REM     if !current_index! equ %hardware% (
+@REM         @REM echo The second value is: %%I
+@REM         set "demotype=%%I"
+@REM         goto :loop_end
+@REM     )
+@REM     set /a current_index+=1
+@REM )
+@REM :loop_end
+
+@REM if "!demotype!"=="Intel" (
+@REM echo run Intel demo
+@REM ) else if "!demotype!"=="Hailo" (
+@REM     echo run Hailo demo
+@REM ) else if "!demotype!"=="Nvidia" (
+@REM     echo run Nvidia demo
+@REM )
+@REM :exit
+@REM pause
+
+
+
