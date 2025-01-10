@@ -2,6 +2,8 @@ import os
 import subprocess
 import argparse
 import sys
+import shutil
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
 from board_check import scan_boardid
 ven_ls={'intel':'8086','hailo':'1E60','nvidia':'10DE'}
@@ -66,7 +68,10 @@ def scan_chip(book):
     # now_os=check_os()
     # have_intel_gpu,have_intel_npu,have_hailo,have_nv=False,False,False,False
     # if os.name == 'nt':
-    chip_data = subprocess.run(['pnputil', '/enum-devices'], capture_output=True, text=True)
+    # chip_data = subprocess.run(['pnputil', '/enum-devices'], capture_output=True, text=True)#1809 not support
+    scan_chip_command="Get-WmiObject Win32_PnPEntity | Where-Object { $_.DeviceID -like '*PCI*' } | Select-Object DeviceID, Name"
+    chip_data = subprocess.run(["powershell", "-Command", scan_chip_command], capture_output=True, text=True)
+    # %SYSTEMROOT%\System32\WindowsPowerShell\\v1.0\\powershell.exe#1809
     lines = chip_data.stdout.splitlines()
     lines = ''.join(lines)
     finded_chip_book=[]
@@ -138,6 +143,16 @@ class Installer:
     def build_folder(self,folder_dir):
         if not os.path.exists(folder_dir):
             os.mkdir(folder_dir)
+
+    def check_install_finish_msg(self,exe_output_msg):
+        is_install_sucessully=True
+        fail_key_word=['error','fail']
+        for key_word in fail_key_word:
+            if key_word in exe_output_msg:
+                is_install_sucessully=False
+                break
+        return is_install_sucessully
+    
     def exec_installer(self,installer_dir,installer_arg):
         install_status=False
         driver_name=installer_dir.split('\\')[-1]
@@ -150,14 +165,25 @@ class Installer:
             install_driver_command_ls=['pnputil','/add-driver',installer_dir,'/install']
         else:
             raise Exception("***unsupport installer type!***")
+        print('===Installing {}!==='.format(driver_name))
         try:
-            result = subprocess.run(install_driver_command_ls, capture_output=True, text=True, shell=True)
-            install_status=True
-            print('===Install {} successfully!==='.format(driver_name))
+            result = subprocess.run(install_driver_command_ls, capture_output=True, text=True).stdout.splitlines()#, shell=True
+            install_status=self.check_install_finish_msg(result)
         except Exception as e:
-            print('***Install {} Error!!!***'.format(driver_name))
             print(e)       
         return install_status
+    
+    def need_update_driver(self,old_ver,new_ver):
+        #input is string
+        #if computer driver is old->output 'true'(need update)
+        need_update=False
+        new_ver_ls = list(map(int, new_ver.strip().split('.')))
+        old_ver_ls = list(map(int, old_ver.strip().split('.')))
+
+        for new_word, old_word in zip(new_ver_ls, old_ver_ls):
+            if new_word > old_word:
+                return need_update
+
     def install_driver(self,device_config):
         # driver_name=device_config['driver_url'].split('/')[-1]
         installer_dir=device_config['driver_dir']
@@ -230,14 +256,19 @@ def install_driver(book):
             driver_is_installed=installer.install_driver(config['Intel_GPU'])
         if find_chip_type_info['device_type']=='intel_npu':
             npu_driver_dir = config['Intel_NPU']['driver_dir']
-            if npu_driver_dir.split('\\')[0]=='':
-                driver_name=npu_driver_dir.split('\\')[-1]
-                npu_driver_dir=os.path.join(drivre_installation_dir,'driver',driver_name)
-            if not os.path.exists(npu_driver_dir):
-                print("sorry!please go to intell website download NPU driver:")
-                print("https://www.intel.com/content/www/us/en/download/794734/intel-npu-driver-windows.html")
-            else:
+            # if npu_driver_dir.split('\\')[0]=='':
+            #     driver_name=npu_driver_dir.split('\\')[-1]
+            #     npu_driver_dir=os.path.join(drivre_installation_dir,'driver',driver_name)
+            # if not os.path.exists(npu_driver_dir):
+            #     print("sorry!please go to intell website download NPU driver:")
+            #     print("https://www.intel.com/content/www/us/en/download/794734/intel-npu-driver-windows.html")
+            # else:
+            import platform
+            win_release = platform.release()
+            if win_release == "11":
                 driver_is_installed=installer.install_driver(config['Intel_NPU'])
+            else:
+                print('Intel NPU need runing in Windows 11!')
         if find_chip_type_info['device_type']=='hailo':
             driver_is_installed=installer.install_driver(config['Hailo'])
         if find_chip_type_info['device_type']=='nvidia_gpu':
@@ -245,56 +276,6 @@ def install_driver(book):
             for now_insatll in all_install:
                 driver_is_installed=installer.install_driver(config[now_insatll])
 
-        # if find_chip_type_info['device_type']=='intel_gpu':
-        #     installfile_dir=os.path.join(drivre_installation_dir,'Intel_GPU_Driver','Installer.exe')
-            
-
-        # if find_chip_type_info['device_type']=='intel_npu':
-        #     installfile_dir=os.path.join(drivre_installation_dir,'Intel_NPU_Driver','npu.inf')
-        #     driver_is_insyalled=installer.install_driver(installfile_dir)
-
-        # if find_chip_type_info['device_type']=='hailo':
-        #     installfile_dir=os.path.join(drivre_installation_dir,'hailort_4.19.0_windows_installer.msi')
-
-        # if find_chip_type_info['device_type']=='nvidia_gpu':
-        #     file_dir=config['Nvidia']['driver_dir']
-        #     file_url=config['Nvidia']['driver_url']
-        #     if not file_dir:
-        #         file_dir=os.path.join(drivre_installation_dir,file_url.split('/')[-1])
-        #     if not os.path.isfile(file_dir): 
-        #         installer.download_file(installfile_dir)
-        #     installfile_dir=os.path.join(drivre_installation_dir,'Intel_NPU_Driver','npu.inf')
-        #     driver_is_insyalled=installer.install_driver(installfile_dir)
-        #     pass
-        #     try:
-        #         #graphic card driver
-        #         #https://www.nvidia.com/zh-tw/drivers/
-        #         #cuda-toolkit
-        #         #https://developer.nvidia.com/cuda-toolkit-archive
-        #         # nv_graphic_drive_dir=os.path.join(drivre_installation_dir,'Nvidia_graphiccard_driver553.exe')
-        #         nv_graphic_drive_dir=os.path.join(drivre_installation_dir,'553.50-quadro-rtx-desktop-notebook-win10-win11-64bit-international-dch-whql.exe')
-        #         nv_graphic_driver_url='https://tw.download.nvidia.com/Windows/Quadro_Certified/553.50/553.50-quadro-rtx-desktop-notebook-win10-win11-64bit-international-dch-whql.exe'
-        #         if download_data(nv_graphic_driver_url,nv_graphic_drive_dir):
-        #             print("The file was downloaded successfully!")
-        #         else:
-        #             raise Exception("***Downloaded file error!***")             
-        #         if install_by_exe(nv_graphic_drive_dir):
-        #             print("The Nvidia graphic card driver was installation successfully！")
-        #         else:
-        #             raise Exception("***Install driver error!***")
-        #         # cuda_toolkit_dir=os.path.join(drivre_installation_dir,'cuda_toolkit12_4.exe')
-        #         cuda_toolkit_dir=os.path.join(drivre_installation_dir,'cuda_12.4.0_551.61_windows.exe')
-        #         cuda_toolkit_url='https://developer.download.nvidia.com/compute/cuda/12.4.0/local_installers/cuda_12.4.0_551.61_windows.exe'
-        #         if download_data(cuda_toolkit_url,cuda_toolkit_dir):
-        #             print("The file was downloaded successfully!")
-        #         else:
-        #             raise Exception("***Downloaded file error!***")             
-        #         if install_by_exe(cuda_toolkit_dir):
-        #             print("The CUDA Toolkit was installation successfully！")
-        #         else:
-        #             raise Exception("***Install driver error!***")
-        #     except Exception as e:
-        #         print(e)
 
 
 def scan_driver(book):
@@ -309,17 +290,18 @@ def scan_driver(book):
             driver_book.append(new_chip_type_info)         
             continue
         device_id='PCI\VEN_'+find_chip_type_info['ven_id']+'&DEV_'+find_chip_type_info['sup_chip_ls']
-        find_driver_command = 'Get-WmiObject Win32_PnPSignedDriver | Where-Object { $_.DeviceID -like "'+device_id+'*" } | Select-Object DriverVersion, DeviceID'
+        find_driver_command = 'Get-WmiObject Win32_PnPSignedDriver | Where-Object { $_.DeviceID -like "'+device_id+'*" } | Select-Object DriverVersion'
         result = subprocess.run(["powershell", "-Command", find_driver_command], 
                                 capture_output=True, text=True).stdout.splitlines()
-        if result :
+        if result[3].strip() :
+            print('Driver version: '+result[3])
             print('The {device_type} Driver is ready!'.format(**find_chip_type_info))
             new_chip_type_info=dict(find_chip_type_info)
             new_chip_type_info.update({'driver': True})
             driver_book.append(new_chip_type_info)
             # return True
         else:
-            print('Driver not find!')
+            print('{device_type} driver not find!'.format(**find_chip_type_info))
             # return False
     # ====================================================
     # device_type|ven_id|sup_chip_ls           |driver
@@ -390,6 +372,8 @@ def build_runspace(driver_installed_book,build_demo_type):
                     input_value=input()
                     if input_value=='Y' or input_value=='y':
                         print("Reinstall {} NOW!!!!".format(env_name))
+                        print("Cleaning old Run Space!")
+                        shutil.rmtree(env_folder)
                         reset_runspace=True
                         break
                     elif input_value=='N' or input_value=='n':

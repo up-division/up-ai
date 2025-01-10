@@ -2,7 +2,7 @@
 echo =====================================
 echo Install hailo objecet detect packages
 echo =====================================
-py -m venv %currentDir%/env/hailo-obj_det
+py -3.10 -m venv %currentDir%/env/hailo-obj_det
 call %currentDir%/env/hailo-obj_det/Scripts/activate.bat
 pip install wheel
 pip install %currentDir%\app\hailo\py_pkg\netifaces-0.11.0-cp310-cp310-win_amd64.whl

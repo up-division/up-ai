@@ -104,10 +104,9 @@ if "!demotype!"=="Intel" (
         goto obj_detect
     )
 	echo Start Object Detect......
-    	Rem cd %currentDir%/app/openvino/obj-detect/
 	cd  %~dp0\..\obj-detect
-	Rem python demo.py %currentDir%\video\hailo_obj_video.mp4
-	python demo.py %currentDir%\video\hailo_obj_video.mp4
+    @REM in run space, use 'python' comand
+	python demo.py %currentDir%\video\people.mp4
     cd %currentDir%
 ) else if "!demotype!"=="Hailo" (
     if exist "%currentDir%/env/hailo-obj_det/Scripts/activate.bat" (
@@ -118,6 +117,7 @@ if "!demotype!"=="Intel" (
         goto obj_detect
     )
 	echo Start detection with tracker...
+    @REM in run space, use 'python' comand
 	python %hailodemoDir%\detection_with_tracker.py -n %currentDir%\model\yolov5m_wo_spp_60p.hef -i %currentDir%\video\hailo_obj_video.mp4 -l %hailodemoDir%\coco.txt
 
 ) else if "!demotype!"=="Nvidia" (
@@ -130,7 +130,7 @@ if "!demotype!"=="Intel" (
     )
     echo Start Yolov11 by pytorch!
     cd %currentDir%\app\pytorch
-    @REM yolo predict model=yolo11n.pt source='https://ultralytics.com/images/bus.jpg'
+    @REM in run space, use 'python' comand
     python yolov11_predict.py
     cd %currentDir%
 
@@ -197,9 +197,8 @@ if "!demotype!"=="Intel" (
         goto obj_detect1
     )
 	echo Start Object Detect......
-    REM cd %currentDir%/app/openvino/obj-detect/
     cd  %~dp0\..\obj-detect
-
+    @REM in run space, use 'python' comand
 	python demo.py 0
     cd %currentDir%
 ) else if "!demotype!"=="Hailo" (
@@ -211,6 +210,7 @@ if "!demotype!"=="Intel" (
         goto obj_detect1
     )
 	echo Start detection with tracker...
+    @REM in run space, use 'python' comand
 	python %hailodemoDir%/detection_with_tracker.py -n %currentDir%\model\yolov5m_wo_spp_60p.hef -l %hailodemoDir%\coco.txt
 
 ) else if "!demotype!"=="Nvidia" (
@@ -223,7 +223,7 @@ if "!demotype!"=="Intel" (
     )
     echo Start Yolov11 by pytorch!
     cd %currentDir%\app\pytorch
-    @REM yolo predict model=yolo11n.pt source='https://ultralytics.com/images/bus.jpg'
+    @REM in run space, use 'python' comand
     python yolov11_predict.py vedio
     cd %currentDir%
 
@@ -290,9 +290,8 @@ if "%demotype%"=="Intel" (
         goto chatbot
     )
 	echo Start Chatbot......
-    Rem cd %currentDir%/app/openvino/chatbot/
 	cd %~dp0\..\chatbot
-
+    @REM in run space, use 'python' comand
 	python chatbot.py
     cd %currentDir%
 ) else if "%hardware%"=="0" (
@@ -304,105 +303,3 @@ if "%demotype%"=="Intel" (
 )
 pause
 goto chatbot
-
-
-
-
-
-
-
-
-
-
-
-
-@REM @echo off
-@REM setlocal enabledelayedexpansion
-
-@REM REM 定義 A 和 B 類的 Instance ID 列表
-@REM set "Hailo=3E92;2864"
-@REM set "Nvidia_Pytorch=3E92;24FA"
-
-@REM REM 臨時文件用於存儲 pnputil 的輸出
-@REM set "tempfile=%temp%\pnputil_output.txt"
-
-@REM REM 執行 pnputil 並將輸出重定向到臨時文件
-@REM pnputil /enum-devices /connected > "%tempfile%"
-
-@REM REM 初始化存儲匹配的 Instance IDs
-@REM set "matched_instances=Intel;"
-@REM set "Hailo=3E92;2864"
-@REM set "Nvidia=3E92;24FA"
-@REM REM 將 A 和 B 合併到總列表中
-@REM set "com_instance_ids=Hailo;Nvidia"
-
-@REM REM 遍歷所有類別
-@REM for %%I in (%com_instance_ids%) do (
-@REM     REM 動態展開每個類別的變數值
-@REM     set "current_list=!%%I!"
-    
-@REM     REM 遍歷該類別中的每個 Instance ID
-@REM     for %%J in (!current_list!) do (
-@REM         REM 假設文件 tempfile.txt 中需要匹配
-@REM         set "device_instances=PCI\VEN_8086&DEV_%%J"
-@REM         findstr /c:"%%J" "%tempfile%" >nul
-@REM         if !errorlevel! equ 0 (
-@REM             REM 如果匹配成功，將該 Instance ID 添加到 matched_instances
-@REM             set "matched_instances=!matched_instances!%%I;"
-@REM         )
-@REM     )
-@REM )
-
-@REM REM 打印所有匹配到的 Instance IDs
-@REM set "counter=1"
-@REM if defined matched_instances (
-@REM     echo Matched Instance IDs:
-@REM     for %%M in (!matched_instances!) do (
-@REM         echo !counter!.%%M
-@REM         set /a counter+=1
-@REM     )
-@REM ) else (
-@REM     echo No matching Instance IDs found.
-@REM )
-@REM :input
-@REM set /p hardware="Please input number: "
-@REM REM 確定輸入是否正確
-@REM @REM if %hardware%>!counter! || %hardware%<1
-@REM @REM     echo please input right value
-@REM REM 檢查輸入是否為數字
-@REM for /F "delims=0123456789" %%A in ("%hardware%") do (
-@REM     echo Invalid input. Please enter a number.
-@REM     goto :input
-@REM )
-@REM if %hardware% GTR !counter! (
-@REM     echo Invalid input.
-@REM     goto :input
-@REM ) else if %hardware% LSS 1 (
-@REM     echo Invalid input.
-@REM     goto :input
-@REM )
-
-@REM REM Map value
-@REM set "current_index=1"
-@REM for %%I in (%matched_instances%) do (
-@REM     if !current_index! equ %hardware% (
-@REM         @REM echo The second value is: %%I
-@REM         set "demotype=%%I"
-@REM         goto :loop_end
-@REM     )
-@REM     set /a current_index+=1
-@REM )
-@REM :loop_end
-
-@REM if "!demotype!"=="Intel" (
-@REM echo run Intel demo
-@REM ) else if "!demotype!"=="Hailo" (
-@REM     echo run Hailo demo
-@REM ) else if "!demotype!"=="Nvidia" (
-@REM     echo run Nvidia demo
-@REM )
-@REM :exit
-@REM pause
-
-
-

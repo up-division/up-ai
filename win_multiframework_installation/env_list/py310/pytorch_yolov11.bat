@@ -2,7 +2,7 @@
 echo =====================================
 echo         Install Yolov11 demo
 echo =====================================
-py -m venv %currentDir%/env/torch_yolov11
+py -3.10 -m venv %currentDir%/env/torch_yolov11
 call %currentDir%/env/torch_yolov11/Scripts/activate.bat
 pip install ultralytics
 pip install argparse
@@ -16,5 +16,5 @@ if exist "%currentDir%\video\people.mp4" (
     echo Hailo demo video exist.
 ) else (
     echo Download demo video now.
-    curl https://cdn.pixabay.com/video/2016/11/15/6398-191712356_small.mp4?download -o %currentDir%\video\people.mp4
+    curl https://storage.openvinotoolkit.org/repositories/openvino_notebooks/data/data/video/people.mp4 -o %currentDir%\video\people.mp4
 )
