@@ -12,7 +12,7 @@ if [ -f "$HOME/tappas/scripts/bash_completion.d/python-argcomplete" ]; then
     if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
         rm -f "$HOME/tappas/scripts/bash_completion.d/python-argcomplete"
     else
-    exit 0
+        exit 0
     fi
 fi
 

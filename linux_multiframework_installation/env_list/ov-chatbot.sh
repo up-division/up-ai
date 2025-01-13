@@ -17,5 +17,5 @@ fi
 python3 -m venv $PWD/env/chatbot
 source $PWD/env/chatbot/bin/activate
 python3 -m pip install --upgrade pip
-pip install -r $PWD/../chatbot/requirements.txt
+pip install -r ../chatbot/requirements.txt
 echo "Chatbot Environment Installation Completed!"

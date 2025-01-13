@@ -6,14 +6,14 @@ sudo apt --fix-broken install
 # Function to display the main menu
 main_menu() {
     clear
-    echo ===========================
-    echo        $'\t'Function Menu
-    echo ===========================
+    echo =============================
+    echo $'\t'Function Menu
+    echo =============================
     echo 1. Object detect -- Video
     echo 2. Object detect -- Camera
     echo 3. Chatbot
     echo 0. Exit
-    echo ===========================
+    echo =============================
     read -p "Please input : " demo
 
     case $demo in
@@ -32,7 +32,7 @@ main_menu() {
 
 objv_menu() {
     echo ============================================================
-    echo        $'\t'Select Hardware "("Object Detection -- Video")"
+    echo $'\t'Select Hardware "("Object Detection -- Video")"
     echo ============================================================
 
     dev_option=()
@@ -78,7 +78,7 @@ objv_menu() {
             if [ -f "$PWD/env/obj_ov/bin/activate" ];then
                 source env/obj_ov/bin/activate
                 echo Start Object Detect......
-                cd $PWD/../obj-detect
+                cd ../obj-detect
                 python3 demo.py
                 cd $ori_dir
             else
@@ -105,9 +105,10 @@ objv_menu() {
             if [ -f "$PWD/env/obj_cuda/bin/activate" ];then
                 source env/obj_cuda/bin/activate
                 echo Start Object Detect......
-                mkdir -p $PWD/up-ai/obj-cuda
-                cd $PWD/../obj-cuda
-                yolo predict model=yolo11n.pt source="https://storage.openvinotoolkit.org/repositories/openvino_notebooks/data/data/video/people.mp4" show=True save=False device=0
+                mkdir -p ../obj-cuda
+                cd ../obj-cuda
+                #yolo predict model=yolo11n.pt source="https://storage.openvinotoolkit.org/repositories/openvino_notebooks/data/data/video/people.mp4" show=True save=False device=0
+                yolo predict model=yolo11n.pt source="../videos/obj_video.mp4" show=True save=False device=0
                 cd $ori_dir
             else
                 echo This demo environment not install! Please rechoose!
@@ -129,7 +130,7 @@ objv_menu() {
 objc_menu() {
     clear
     echo =============================================================
-    echo        $'\t'Select Hardware "("Object Detection -- Camera")"
+    echo $'\t'Select Hardware "("Object Detection -- Camera")"
     echo =============================================================
 
     dev_option=()
@@ -169,7 +170,7 @@ objc_menu() {
             if [ -f "$PWD/env/obj_ov/bin/activate" ];then
                 source env/obj_ov/bin/activate
                 echo Start Object Detect......
-                cd $PWD/../obj-detect
+                cd ../obj-detect
                 python3 demo.py 0
                 cd $ori_dir
             else
@@ -183,8 +184,8 @@ objc_menu() {
             if [ -f "$PWD/env/obj_cuda/bin/activate" ];then
                 source env/obj_cuda/bin/activate
                 echo Start Object Detect......
-                mkdir $PWD/up-ai/obj-cuda
-                cd $PWD/../obj-cuda
+                mkdir ../obj-cuda
+                cd ../obj-cuda
                 yolo predict model=yolo11n.pt source=0 show=True save=False device=0
                 cd $ori_dir
             else
@@ -240,7 +241,7 @@ chatbot_menu() {
             if [ -f "$PWD/env/chatbot/bin/activate" ]; then
                 source env/chatbot/bin/activate
                 echo Start Chatbot......
-                cd $PWD/../chatbot
+                cd ../chatbot
                 python3 chatbot.py
                 cd $ori_dir
                 chatbot_menu
