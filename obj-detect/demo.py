@@ -11,6 +11,9 @@ from typing import List, Tuple
 import torch
 import torchvision
 import yaml
+import ctypes
+from ctypes import *
+import psutil
 
 core=ov.Core()
 
@@ -367,6 +370,165 @@ def letterbox(im, new_shape=(640, 640), color=(114, 114, 114), auto=True, scaleF
     im = cv2.copyMakeBorder(im, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
     return im, ratio, (dw, dh)
 
+def draw_chart(usages, history, width, height):
+    """
+    绘制实时CPU使用率图表
+    :param usages: 当前CPU使用率列表
+    :param history: 历史数据列表
+    :param width: 图表区域的宽度
+    :param height: 图表区域的高度
+    :return: 带有图表的图像
+    """
+    POINT_SPACING=5
+    margin = 10
+    graph_width = width - margin * 2
+    graph_height = height - margin * 2
+
+    # 创建黑色画布用于绘制图表
+    # img = np.zeros((height, width, 3), dtype=np.uint8)
+    img = np.zeros((height, width, 3), dtype=np.uint8)
+    img.fill(255)
+    cv2.rectangle(img, (0, - margin * 2), (width, height), (169, 169, 169), -1)  # 灰色背景
+    # 绘制坐标轴
+    cv2.line(img, (margin, height - margin), (width - margin, height - margin), (255, 255, 255), 2)  # X轴
+    cv2.line(img, (margin, margin), (margin, height - margin), (255, 255, 255), 2)  # Y轴
+
+    # 绘制Y轴刻度
+    for i in range(0, 101, 20):  # 0%到100%的刻度
+        y = height - margin - int(i / 100 * graph_height)
+        cv2.line(img, (margin - 5, y), (margin, y), (255, 255, 255), 1)
+        cv2.putText(img, f"{i}%", (10, y + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+
+    # 更新历史数据
+    history.append(usages)
+    # print(history)
+    if len(history) > graph_width // POINT_SPACING:
+        history.pop(0)  # 移除旧数据，保证图宽度不超过画布
+
+    # 绘制折线图
+    colors = [
+        (0, 0, 255), (0, 255, 0), (255, 0, 0), (255, 255, 0),
+        (0, 255, 255), (255, 0, 255), (200, 100, 50), (50, 100, 200)
+    ]  # 为每个核心分配不同颜色
+
+    for core in range(len(usages)):
+        for x in range(1, len(history)):
+            # print('draw line')
+            prev_x = margin + (x - 1) * POINT_SPACING
+            curr_x = margin + x * POINT_SPACING
+            prev_y = height - margin - int(history[x - 1][core] / 100 * graph_height)
+            curr_y = height - margin - int(history[x][core] / 100 * graph_height)
+            cv2.line(img, (prev_x, prev_y), (curr_x, curr_y), colors[core % len(colors)], 1)
+
+        # 显示核心标记
+        cv2.putText(img, f"Core {core + 1}: {usages[core]:.1f}%", 
+                    (width - margin - 150, margin + core * 20), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, colors[core % len(colors)], 1)
+
+    return img
+
+def draw_progress_bar(image, value, position, size, bar_color=(0, 255, 0), bg_color=(50, 50, 50), thickness=1):
+    """
+    Draw a progress bar on an image.
+
+    :param image: The image on which to draw the progress bar.
+    :param value: The progress value (0 to 100).
+    :param position: (x, y) tuple for the top-left corner of the bar.
+    :param size: (width, height) tuple for the size of the bar.
+    :param bar_color: Color of the progress bar in BGR format.
+    :param bg_color: Background color of the bar in BGR format.
+    :param thickness: Thickness of the bar border.
+    """
+    x, y = position
+    width, height = size
+
+    # Draw the background rectangle
+    cv2.rectangle(image, (x, y), (x + width, y + height), bg_color, -1)
+
+    # Calculate the width of the filled part
+    fill_width = int((value / 100) * width)
+
+    # Draw the filled rectangle
+    cv2.rectangle(image, (x, y), (x + fill_width, y + height), bar_color, -1)
+
+    # Draw the border rectangle
+    cv2.rectangle(image, (x, y), (x + width, y + height), (255, 255, 255), thickness)
+
+def quest_device_usage():
+    global thread_runing_flag
+    mem_use_c=c_uint()
+    global cpu_use,cpu_num,mem_use
+    while thread_runing_flag:
+        if show_device['CPU']:
+            if os.name == 'posix':  # ubuntu
+                cpu_read_ok = psutil.cpu_percent(interval=1, percpu=True)
+                device_usage['CPU'] = cpu_read_ok
+            elif os.name == 'nt':   # windows
+                cpu_read_ok = dll.GetCPUUsage(cpu_use,cpu_num)
+                device_usage['CPU'] = list(cpu_use[:cpu_num])
+            else :
+                break
+        if show_device['Memory']:
+            if os.name == 'posix':
+                mem_read_ok =  psutil.virtual_memory()
+                device_usage['Memory']['use_mem']=mem_read_ok.active/1048576000
+                device_usage['Memory']['use_per']=device_usage['Memory']['use_mem']/device_usage['Memory']['tot_mem']
+            elif os.name == 'nt':
+                mem_read_ok = dll.GetMemoryUsage(ctypes.byref(mem_use_c))
+                device_usage['Memory']['use_mem']=mem_use_c.value/1000#/100
+                device_usage['Memory']['use_per']=device_usage['Memory']['use_mem']/device_usage['Memory']['tot_mem']
+            else :
+                break
+        threading.Event().wait(0.1)  # 定时 1 秒
+
+def display_multi_cpu_usage_on_image(image, device_usage, display_cont, start_x=150, start_y=300, bar_width=200, bar_height=20, spacing=35):
+    
+    # 創建透明區域的圖層
+    overlay = image.copy()
+    word_width = 80
+    rect_x1 = start_x - 10
+    rect_y1 = start_y - 10
+    rect_x2 = start_x + bar_width + word_width + 10
+    rect_y2 = start_y + spacing
+    # rect_y2 = start_y + spacing * len(device_usage) #for multi device
+    
+    # 繪製半透明背景色塊
+    cv2.rectangle(overlay, (rect_x1, rect_y1), (rect_x2, rect_y2), (50, 50, 50), -1)
+    opacity = 0.7
+    image = cv2.addWeighted(overlay, opacity, image, 1 - opacity, 0)
+    
+    # 繪製進度條和文字
+    for i, (device, usage) in enumerate(device_usage.items()):
+        if device == "CPU": #and not display_cont['CPU']:
+            continue  # 跳過 CPU 的顯示
+        if device == "Memory" and not display_cont['Memory']:
+            continue  # 跳過 Memory 的顯示
+        # 計算進度條座標
+        bar_x1 = start_x + word_width
+        bar_y1 = start_y
+        # bar_y1 = start_y + i * spacing
+        
+        bar_x2 = int(bar_x1 + bar_width * usage['use_per'])
+        bar_y2 = bar_y1+ bar_height
+        # bar_y2 = bar_y1 + bar_height #for multi device
+        
+        # 繪製進度條背景
+        cv2.rectangle(image, (bar_x1, bar_y1), (bar_x1 + bar_width, bar_y2), (100, 100, 100), -1)
+        
+        # 繪製進度條填充部分
+        cv2.rectangle(image, (bar_x1, bar_y1), (bar_x2, bar_y2), (255, 105, 180), -1)
+        
+        # 顯示硬體類別
+        cv2.putText(image, f"{device}", (start_x + 5, bar_y1 + bar_height - 5), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv2.LINE_AA)
+        # 顯示使用率
+        cv2.putText(image, "{use_mem:.1f}/{tot_mem:.1f} GB".format(**usage), (bar_x1 + 5, bar_y1 + bar_height - 5), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv2.LINE_AA)
+
+        # cv2.putText(image, f"{device}", (bar_x1 - 70, bar_y1 + bar_height - 5), 
+        #             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv2.LINE_AA) #for multi device
+    
+    return image
 
 class VideoPlayer:
     """
@@ -546,9 +708,36 @@ def run_object_detection(
     device="",
 ):
     player = None
-
+    now_dir=os.getcwd()
+    # print(now_dir)
+    global thread_runing_flag,cpu_use,cpu_num,mem_use,dll
+    thread_runing_flag=True
+    C_Integers = c_int * 256
+    cpu_use=C_Integers()
+    if os.name == 'posix':
+        cpu_num = psutil.cpu_count(logical=True)
+        tot_mem=c_uint()
+        tot_mem=psutil.virtual_memory().total
+        tot_mem=tot_mem/1048576000 
+    if os.name == 'nt':
+        dll = ctypes.CDLL(now_dir+r'\AaeonHWUsage.dll')
+        cpu_num=dll.GetCoreCount()
+        tot_mem=c_uint()
+        _ = dll.GetTotMemory(ctypes.byref(tot_mem))
+        tot_mem=tot_mem.value/1000
+    
 
     compiled_model = core.compile_model(model, device)
+    global show_device,device_usage
+    show_device = {
+    "CPU": True,
+    "Memory": True,
+    }
+    device_usage = {
+    "CPU": [0.0]*cpu_num,
+    "Memory": {'use_per':0.1,'tot_mem':tot_mem,'use_mem':0.0},
+    }
+    history = []
     try:
         # Create a video player to play with target fps.
         player = VideoPlayer(source=source, flip=flip, fps=30, skip_first_frames=skip_first_frames)
@@ -559,6 +748,8 @@ def run_object_detection(
             cv2.namedWindow(winname=title, flags=cv2.WINDOW_GUI_NORMAL | cv2.WINDOW_AUTOSIZE)
 
         processing_times = collections.deque()
+        usage_quest = threading.Thread(target=quest_device_usage, daemon=True)
+        usage_quest.start()
         while True:
             # Grab the frame.
             frame = player.next()
@@ -598,13 +789,26 @@ def run_object_detection(
             frame1=cv2.putText(
                 img=frame,
                 text=f"Inference time: {processing_time:.1f}ms ({fps:.1f} FPS)",
-                org=(20, 40),
+                org=(int(f_width/3), 40),
                 fontFace=cv2.FONT_HERSHEY_COMPLEX,
                 fontScale=f_width / 1000,
                 color=(0, 0, 255),
-                thickness=1,
+                thickness=3,
                 lineType=cv2.LINE_AA,
             )
+            # dll.GetCPUUsage(cpu_use,cpu_num)
+            if show_device['Memory']:
+                frame1=display_multi_cpu_usage_on_image(
+                    frame1,  # Replace with your input image path
+                    device_usage,
+                    show_device
+                    )
+            if show_device['CPU']:
+                chart_height = frame1.shape[0] // 3  # 图片高度的三分之一
+                chart = draw_chart(device_usage['CPU'], history, frame1.shape[1] - 20, chart_height)
+                # 创建叠加图片，将图表放置在图片底部
+                # overlay_image = frame1.copy()
+                frame1[-chart_height:, 10:-10] = chart  # 将图表放置在底部
             # Use this workaround if there is flickering.
             if use_popup:
                 #cv2.imshow(winname=title, mat=frame)
@@ -613,6 +817,27 @@ def run_object_detection(
                 # escape = 27
                 if key == 27:
                     break
+                elif key == ord('a'):  # 按下 'A' 切換 surprise 的顯示
+                    all_show=True
+                    for device, device_stat in show_device.items():
+                        if show_device[device]==False:
+                            all_show=False
+                            break
+                    if all_show:    #全開就全關閉
+                        for device, device_stat in show_device.items():
+                            show_device[device]=False
+                            history=[]
+                    else:           #如果沒全開就先全開
+                        for device, device_stat in show_device.items():
+                            show_device[device]=True
+                elif key == ord('c'):  # 按下 'A' 切換 surprise 的顯示
+                    show_device['CPU'] = not show_device['CPU']
+                    if show_device['CPU']==False:
+                        history=[]
+                elif key == ord('m'):  # 按下 'A' 切換 surprise 的顯示
+                    show_device['Memory'] = not show_device['Memory']
+
+                
             else:
                 # Encode numpy array to jpg.
                 _, encoded_img = cv2.imencode(ext=".jpg", img=frame, params=[cv2.IMWRITE_JPEG_QUALITY, 100])
@@ -633,30 +858,30 @@ def run_object_detection(
             player.stop()
         if use_popup:
             cv2.destroyAllWindows()
+        thread_runing_flag=False
 
 
 def main(argv):
     
-    model_file=Path(__file__).parent/"model"/ "yolo11n.xml"
+    model_file=Path("model")/ "yolo11n.xml"
     
     quantized_model = core.read_model(model_file)
     weights = model_file
-    metadata = yaml_load(Path(__file__).parent/"model"/ "metadata.yaml")
+    metadata = yaml_load(Path("model")/ "metadata.yaml")
     global NAMES
     NAMES = metadata["names"]
 
     if(len(argv)<2):
-        VIDEO_SOURCE="https://storage.openvinotoolkit.org/repositories/openvino_notebooks/data/data/video/people.mp4"
+        # VIDEO_SOURCE="https://storage.openvinotoolkit.org/repositories/openvino_notebooks/data/data/video/people.mp4"
+        VIDEO_SOURCE="../videos/obj_video.mp4"
     else:
         if(argv[1].isdigit()):
             VIDEO_SOURCE = int(argv[1])
         else:
             VIDEO_SOURCE = argv[1]
 
-    if(sys.platform.startswith('linux')):
-        os.system("clear")
-    elif(sys.platform.startswith('win32')):
-        os.system("cls")
+
+    # os.system("cls")
     
     while(1):
         print("Select you wanted running device:")
@@ -675,17 +900,12 @@ def main(argv):
             print("select " +device_dict[str(sel_dev)]+ " to running" )
             break
         else:
-            
-            if(sys.platform.startswith('linux')):
-                os.system("clear")
-            elif(sys.platform.startswith('win32')):
-                os.system("cls")
-                
+            os.system("cls")
             print("Not invild input!!!!!!!!!!!!!!!!!")
         
     run_object_detection(
         source=VIDEO_SOURCE,
-        flip=False,
+        flip=True,
         use_popup=True,
         model=quantized_model,
         device=device_dict[str(sel_dev)],
