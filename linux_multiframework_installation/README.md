@@ -17,5 +17,5 @@ chmod +x prepare.sh start_app.sh
 ```
 3. 
 ```
-./start_app.sh
+sudo ./start_app.sh
 ```

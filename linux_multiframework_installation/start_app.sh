@@ -1,5 +1,6 @@
 #!/bin/bash
 
+xhost +si:localuser:root
 ori_dir=$(pwd)
 sudo apt --fix-broken install
 
