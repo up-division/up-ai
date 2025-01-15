@@ -22,7 +22,7 @@ if "!is_installed!"=="0x1" (
     echo Visual C++ installation Complete!
     goto vc_end
 )
-
+endlocal
 :vc_menu
 echo [Y] Update VC++
 echo [N] Pass update VC++
@@ -43,37 +43,36 @@ if /i "!choice!"=="Y" (
 )
 
 :vc_end
-endlocal
-
 
 :install_python
-
+@REM reset %errorlevel%
+cd .
 py -3.10 --version
 if %errorlevel%==0 (
     echo Python 3.10 already in OS!
     goto install_python_end
 ) else (
     echo Python 3.10 not find!
-    goto online_install_python
+    @REM goto online_install_python
 )
-:online_install_python
-@REM reset %errorlevel%
-cd .
 echo "Install python 3.10 now..."
+:online_install_python
+cd .
 if not exist "%py_installer_dir%" (
     echo Download Python 3.10 install exe now.
     ping -n 1 %python_web% >nul 2>&1
-    if %errorlevel%==0 (
-        echo Connet Python Web now...
-    ) else (
+    if errorlevel 1 (
         echo Connet Python Web fail...
         echo Please connect to the Internet and click any button to continue.
         pause
-        goto install_python
+        goto online_install_python
+        
+    ) else (
+        echo Connet Python Web now...
+        curl https://www.python.org/ftp/python/3.10.11/python-3.10.11-amd64.exe -o %currentDir%/app/python310_installer.exe
     )
-    curl https://www.python.org/ftp/python/3.10.11/python-3.10.11-amd64.exe -o %currentDir%/app/python310_installer.exe
 )
-
+endlocal
 echo ==============================================
 echo           Install Python 3.10 now.
 echo ==============================================
@@ -99,30 +98,30 @@ if "%py_usr%"=="1" (
 
 :install_python_end
 
-@REM reset %errorlevel%
-cd .
-:install_git
-echo "Install git now..."
-if not exist "%programfiles%\Git" (
-    if not exist "%currentDir%\app\Git-2.47.0-64-bit.exe" (
-        echo Download git 2.47 installer now.
-        ping -n 1 %git_web% >nul 2>&1
-        if %errorlevel%==0 (
-            echo Connet Github now...
-        ) else (
-            echo Connet Github fail...
-            echo Please connect to the Internet and click any button to continue.
-            goto install_git
-        )
-        curl -L -o %currentDir%/app/git-installer.exe "https://github.com/git-for-windows/git/releases/download/v2.47.0.windows.1/Git-2.47.0-64-bit.exe"
-        @REM curl -L -o %currentDir%/app/git-lfs.exe  "https://github.com/git-lfs/git-lfs/releases/download/v3.5.1/git-lfs-windows-v3.5.1.exe"
-    )
-    echo Install git 2.47
-    %currentDir%/app/git-installer.exe /SILENT
-    @REM %currentDir%/app/git-lfs.exe /SILENT
-    goto install_git
-)
-echo "GIT installed successfully!"
+@REM @REM reset %errorlevel%
+@REM cd .
+@REM :install_git
+@REM echo "Install git now..."
+@REM if not exist "%programfiles%\Git" (
+@REM     if not exist "%currentDir%\app\Git-2.47.0-64-bit.exe" (
+@REM         echo Download git 2.47 installer now.
+@REM         ping -n 1 %git_web% >nul 2>&1
+@REM         if %errorlevel%==0 (
+@REM             echo Connet Github now...
+@REM         ) else (
+@REM             echo Connet Github fail...
+@REM             echo Please connect to the Internet and click any button to continue.
+@REM             goto install_git
+@REM         )
+@REM         curl -L -o %currentDir%/app/git-installer.exe "https://github.com/git-for-windows/git/releases/download/v2.47.0.windows.1/Git-2.47.0-64-bit.exe"
+@REM         @REM curl -L -o %currentDir%/app/git-lfs.exe  "https://github.com/git-lfs/git-lfs/releases/download/v3.5.1/git-lfs-windows-v3.5.1.exe"
+@REM     )
+@REM     echo Install git 2.47
+@REM     %currentDir%/app/git-installer.exe /SILENT
+@REM     @REM %currentDir%/app/git-lfs.exe /SILENT
+@REM     goto install_git
+@REM )
+@REM echo "GIT installed successfully!"
 
 @REM renew env variables
 @REM for /f "tokens=2,* delims= " %%a in ('reg query "HKCU\Environment" /v PATH 2^>nul') do set PATH=%%b

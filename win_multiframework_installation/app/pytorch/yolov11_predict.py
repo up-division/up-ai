@@ -2,12 +2,14 @@ from ultralytics import YOLO
 import argparse
 import cv2
 import os
+#import mo
+from monitor import monitor
 
 model = YOLO('yolo11n.pt')  # 使用預訓練的 YOLOv8 模型
 
 def arg_parser() :
     parser = argparse.ArgumentParser()
-    parser.add_argument("input_source", help="Please input inference source.ex. C:\\<path>\\inference_vedio.mp4 or camera number")
+    parser.add_argument("input_source", help="Please input inference source.ex. C:\\<path>\\inference_video.mp4 or camera number")
     return parser
 # load YOLO model（"yolov8n", "yolov8s" ...）
 
@@ -17,28 +19,63 @@ def main(args):
         cap = cv2.VideoCapture(0)
     else:
         print("Streaming video!")
-        now_dir=os.path.dirname(os.path.abspath(__file__))
-        now_dir=now_dir.split('\\')
-        video_path=now_dir[:-2]
-        video_path=os.path.join('\\'.join(video_path),'video','people.mp4')# 影片路徑
+        # now_dir=os.path.dirname(os.path.abspath(__file__))
+        # now_dir=now_dir.split('\\')
+        # video_path=now_dir[:-2]
+        # video_path=os.path.join('\\'.join(video_path),'videos','people.mp4')# 影片路徑
         # print(video_path)
-        cap = cv2.VideoCapture(video_path)
-
+        # cap = cv2.VideoCapture(video_path)
+        cap = cv2.VideoCapture(args.input_source)
+    vedio_h,vedio_w = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    from monitor import monitor
+    monitor=monitor(vedio_h,vedio_w)
+    monitor.start_cpu_monitor()
+    monitor.start_mem_monitor()
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-
+            
         # 進行推論
         results = model(frame)
-
         annotated_frame = results[0].plot()
-
-        # 顯示推論結果
+        if monitor.show_device['CPU']:
+            chart = monitor.draw_cpu_chart()
+            annotated_frame[-(vedio_h//3):, 10:-10] = chart  # put cpu monitor in bottom
+        if monitor.show_device['Memory']:
+            annotated_frame=monitor.draw_memory_usage_bar(annotated_frame)
+        # show result
         cv2.imshow('YOLO Video Prediction', annotated_frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        input_key=cv2.waitKey(1)
+        if input_key & 0xFF == ord('q'):
+            monitor.stop_cpu_monitor()
+            monitor.stop_mem_monitor()
             break
-
+        elif input_key == ord('a'):  # press 'a' ,open/close cpu & memory monitor
+            all_show=True
+            for device, device_stat in monitor.show_device.items():
+                if monitor.show_device[device]==False:
+                    all_show=False
+                    break
+            if all_show:    #全開就全關閉
+                monitor.stop_cpu_monitor()
+                monitor.stop_mem_monitor()
+            else:           #如果沒全開就先全開
+                monitor.start_cpu_monitor()
+                monitor.start_mem_monitor()
+        elif input_key == ord('c'):  # press 'c' open/close cpu  monitor
+            # monitor.show_device['CPU'] = not monitor.show_device['CPU']
+            if monitor.show_device['CPU']:
+                monitor.stop_cpu_monitor()
+            else:
+                monitor.start_cpu_monitor()
+        elif input_key == ord('m'):  # press 'm' open/close memory monitor
+            if monitor.show_device['Memory']:
+                monitor.stop_mem_monitor()
+            else:
+                monitor.start_mem_monitor()
+    monitor.stop_cpu_monitor()
+    monitor.stop_mem_monitor()
     cap.release()
     cv2.destroyAllWindows()
 

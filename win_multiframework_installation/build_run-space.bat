@@ -6,14 +6,14 @@ cd %currentDir%
 echo "Upgrade pip......"
 python -m pip install --upgrade pip
 
-if not exist "%currentDir%\video" (
+if not exist "%currentDir%\..\videos" (
     echo Make video folder
-    mkdir %currentDir%\video
+    mkdir %currentDir%\..\videos
 )
 
-if not exist "%currentDir%\model" (
+if not exist "%currentDir%\..\models" (
     echo Make model folder
-    mkdir %currentDir%\model
+    mkdir %currentDir%\..\models
 )
 
 :main_menu

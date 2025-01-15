@@ -106,7 +106,7 @@ if "!demotype!"=="Intel" (
 	echo Start Object Detect......
 	cd  %~dp0\..\obj-detect
     @REM in run space, use 'python' comand
-	python demo.py %currentDir%\video\people.mp4
+	python demo.py %currentDir%\..\videos\obj_video.mp4
     cd %currentDir%
 ) else if "!demotype!"=="Hailo" (
     if exist "%currentDir%/env/hailo-obj_det/Scripts/activate.bat" (
@@ -118,7 +118,7 @@ if "!demotype!"=="Intel" (
     )
 	echo Start detection with tracker...
     @REM in run space, use 'python' comand
-	python %hailodemoDir%\detection_with_tracker.py -n %currentDir%\model\yolov5m_wo_spp_60p.hef -i %currentDir%\video\hailo_obj_video.mp4 -l %hailodemoDir%\coco.txt
+	python %hailodemoDir%\detection_with_tracker.py -n %currentDir%\..\models\yolov5m_wo_spp_60p.hef -i %currentDir%\..\videos\hailo_video.mp4 -l %hailodemoDir%\coco.txt
 
 ) else if "!demotype!"=="Nvidia" (
     if exist "%currentDir%/env/torch_yolov11/Scripts/activate.bat" (
@@ -131,7 +131,7 @@ if "!demotype!"=="Intel" (
     echo Start Yolov11 by pytorch!
     cd %currentDir%\app\pytorch
     @REM in run space, use 'python' comand
-    python yolov11_predict.py
+    python yolov11_predict.py %currentDir%\..\videos\obj_video.mp4
     cd %currentDir%
 
 ) else if "!demotype!"=="0" (
@@ -211,7 +211,7 @@ if "!demotype!"=="Intel" (
     )
 	echo Start detection with tracker...
     @REM in run space, use 'python' comand
-	python %hailodemoDir%/detection_with_tracker.py -n %currentDir%\model\yolov5m_wo_spp_60p.hef -l %hailodemoDir%\coco.txt
+	python %hailodemoDir%/detection_with_tracker.py -n %currentDir%\..\models\yolov5m_wo_spp_60p.hef -l %hailodemoDir%\coco.txt
 
 ) else if "!demotype!"=="Nvidia" (
     if exist "%currentDir%/env/torch_yolov11/Scripts/activate.bat" (

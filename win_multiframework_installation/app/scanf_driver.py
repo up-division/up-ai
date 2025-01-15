@@ -264,8 +264,8 @@ def install_driver(book):
             #     print("https://www.intel.com/content/www/us/en/download/794734/intel-npu-driver-windows.html")
             # else:
             import platform
-            win_release = platform.release()
-            if win_release == "11":
+            # win_release = platform.release()
+            if sys.getwindowsversion().build >= 22000:
                 driver_is_installed=installer.install_driver(config['Intel_NPU'])
             else:
                 print('Intel NPU need runing in Windows 11!')
