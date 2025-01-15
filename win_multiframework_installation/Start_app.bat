@@ -282,8 +282,8 @@ for %%I in (%chatbot_matched_instances%) do (
 :loop_end
 
 if "%demotype%"=="Intel" (
-    if exist "%currentDir%/env/chatbot/Scripts/activate.bat" (
-        call %currentDir%/env/chatbot/Scripts/activate.bat
+    if exist "%currentDir%/env/ov-chatbot/Scripts/activate.bat" (
+        call %currentDir%/env/ov-chatbot/Scripts/activate.bat
     ) else (
         echo This demo environment not install,please rechoose!
         pause
