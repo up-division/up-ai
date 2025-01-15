@@ -224,7 +224,7 @@ if "!demotype!"=="Intel" (
     echo Start Yolov11 by pytorch!
     cd %currentDir%\app\pytorch
     @REM in run space, use 'python' comand
-    python yolov11_predict.py vedio
+    python yolov11_predict.py 0
     cd %currentDir%
 
 ) else if "!demotype!"=="0" (
