@@ -1,6 +1,5 @@
 #!/bin/bash
 
-xhost +si:localuser:root
 ori_dir=$(pwd)
 sudo apt --fix-broken install
 
@@ -106,10 +105,7 @@ objv_menu() {
             if [ -f "$PWD/env/obj_cuda/bin/activate" ];then
                 source env/obj_cuda/bin/activate
                 echo Start Object Detect......
-                mkdir -p ../obj-cuda
-                cd ../obj-cuda
-                #yolo predict model=yolo11n.pt source="https://storage.openvinotoolkit.org/repositories/openvino_notebooks/data/data/video/people.mp4" show=True save=False device=0
-                yolo predict model=yolo11n.pt source="../videos/obj_video.mp4" show=True save=False device=0
+                python3 $PWD/app/pytorch/yolov11_predict.py ../videos/obj_video.mp4
                 cd $ori_dir
             else
                 echo This demo environment not install! Please rechoose!
@@ -117,7 +113,7 @@ objv_menu() {
                 clear
                 objv_menu
             fi
-            main_menu
+            #main_menu
             ;;
         *)
             echo "Unknown option, please rechoose!"
@@ -185,9 +181,7 @@ objc_menu() {
             if [ -f "$PWD/env/obj_cuda/bin/activate" ];then
                 source env/obj_cuda/bin/activate
                 echo Start Object Detect......
-                mkdir ../obj-cuda
-                cd ../obj-cuda
-                yolo predict model=yolo11n.pt source=0 show=True save=False device=0
+                python3 $PWD/app/pytorch/yolov11_predict.py 0
                 cd $ori_dir
             else
                 echo This demo environment not install! Please rechoose!

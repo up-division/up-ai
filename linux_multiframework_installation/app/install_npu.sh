@@ -40,11 +40,7 @@ else
 fi
 
 sudo dpkg -i level-zero*.deb
-sudo chown root:render /dev/accel/accel0wget https://github.com/oneapi-src/level-zero/releases/download/v1.17.44/level-zero_1.17.44+u22.04_amd64.deb
-sudo chmod g+rw /dev/accel/accel0wget https://github.com/oneapi-src/level-zero/releases/download/v1.17.44/level-zero_1.17.44+u22.04_amd64.deb
-sudo bash -c "echo 'SUBSYSTEM==\"accel\", KERNEL==\"accel*\", GROUP=\"render\", MODE=\"0660\"' > /etc/udev/rules.d/10-intel-vpu.rules"
-sudo udevadm control --reload-rules
-sudo udevadm trigger --subsystem-match=accel
+sudo chown $USER_NAME:$USER_NAME /dev/accel/accel0
 echo "NPU Installation Completed!"
 
 # Install kernel
