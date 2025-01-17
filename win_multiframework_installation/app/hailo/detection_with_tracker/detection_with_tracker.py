@@ -158,6 +158,7 @@ def main() -> None:
     with open(args.labels, "r", encoding="utf-8") as f:
         class_names: List[str] = f.read().splitlines()
 
+    
     # Start the asynchronous inference in a separate thread
     inference_thread: threading.Thread = threading.Thread(target=hailo_inference.run)
     inference_thread.start()
@@ -168,6 +169,14 @@ def main() -> None:
     else:
         print("Streaming video!")
         cap = cv2.VideoCapture(args.input_video)
+
+    vedio_h,vedio_w = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+    from monitor import monitor
+    monitor=monitor(vedio_h,vedio_w)
+    monitor.start_cpu_monitor()
+    monitor.start_mem_monitor()
+    
     while(True):
         ret, frame = cap.read()
         if not ret:
@@ -203,25 +212,49 @@ def main() -> None:
         annotated_labeled_frame: np.ndarray = postprocess_detections(
             frame, detections, class_names, tracker, box_annotator, label_annotator
         )
-        fps = 1 / infer_time
-        infer_time = infer_time * 1000
-        annotated_labeled_frame=cv2.putText(
-                img=annotated_labeled_frame,
-                text=f"Inference time: {infer_time:.1f}ms ({fps:.1f} FPS)",
-                org=(20, 40),
-                fontFace=cv2.FONT_HERSHEY_COMPLEX,
-                fontScale=video_w / 1000,
-                color=(0, 0, 255),
-                thickness=1,
-                lineType=cv2.LINE_AA,
-            )
+
+        annotated_labeled_frame=monitor.show_fps(annotated_labeled_frame,infer_time)
+        
+        if monitor.show_device['CPU']:
+            chart = monitor.draw_cpu_chart()
+            annotated_labeled_frame[-(vedio_h//3):, 10:-10] = chart  # put cpu monitor in bottom
+        if monitor.show_device['Memory']:
+            annotated_labeled_frame=monitor.draw_memory_usage_bar(annotated_labeled_frame)
         # show
         cv2.imshow('Hailo Demo Video', annotated_labeled_frame)
 
         # exit
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        input_key=cv2.waitKey(1)
+        if input_key & 0xFF == ord('q'):
+            monitor.stop_cpu_monitor()
+            monitor.stop_mem_monitor()
             break
-        
+        elif input_key == ord('a'):  # press 'a' ,open/close cpu & memory monitor
+            all_show=True
+            for device, device_stat in monitor.show_device.items():
+                if monitor.show_device[device]==False:
+                    all_show=False
+                    break
+            if all_show:    #全開就全關閉
+                monitor.stop_cpu_monitor()
+                monitor.stop_mem_monitor()
+            else:           #如果沒全開就先全開
+                monitor.start_cpu_monitor()
+                monitor.start_mem_monitor()
+        elif input_key == ord('c'):  # press 'c' open/close cpu  monitor
+            # monitor.show_device['CPU'] = not monitor.show_device['CPU']
+            if monitor.show_device['CPU']:
+                monitor.stop_cpu_monitor()
+            else:
+                monitor.start_cpu_monitor()
+        elif input_key == ord('m'):  # press 'm' open/close memory monitor
+            if monitor.show_device['Memory']:
+                monitor.stop_mem_monitor()
+            else:
+                monitor.start_mem_monitor()
+
+    monitor.stop_cpu_monitor()
+    monitor.stop_mem_monitor()        
     cap.release()# free camera
     input_queue.put(None)
     inference_thread.join()

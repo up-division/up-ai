@@ -95,6 +95,38 @@ for %%I in (%obj_matched_instances%) do (
 )
 :loop_end
 
+@REM set "ov_demo_video=%currentDir%\..\videos\obj_video.mp4"
+@REM set "hailo_demo_video=%currentDir%\..\videos\hailo_video.mp4"
+@REM @REM set "pytorch_demo_video=%currentDir%\app\hailo\detection_with_tracker"
+@REM echo ============================================
+@REM echo  Select video source
+@REM echo ============================================
+@REM echo  1. Demo video
+@REM echo  2. Custom video
+@REM echo ============================================
+@REM set /p v_source="Please input number: "
+@REM REM 檢查輸入是否為數字
+@REM for /F "delims=0123456789" %%A in ("%v_source%") do (
+@REM     echo Invalid input. Please enter a number.
+@REM     goto :input
+@REM )
+@REM if %v_source% GTR 2 (
+@REM     echo Invalid input.
+@REM     goto :input
+@REM ) else if %v_source% LSS 0 (
+@REM     echo Invalid input.
+@REM     goto :input
+@REM )
+@REM if %v_source% == "1" (
+@REM     echo Use demo vedio.
+@REM     goto :Select_video_end
+@REM ) else if %v_source% == "2" (
+@REM     set /p input_string="Please enter video location: "
+@REM     set "ov_demo_video=%input_string%"
+@REM     set "hailo_demo_video=%input_string%"
+@REM )
+
+:Select_video_end
 if "!demotype!"=="Intel" (
     if exist "%currentDir%/env/ov-obj_det/Scripts/activate.bat" (
         call %currentDir%/env/ov-obj_det/Scripts/activate.bat
@@ -107,6 +139,7 @@ if "!demotype!"=="Intel" (
 	cd  %~dp0\..\obj-detect
     @REM in run space, use 'python' comand
 	python demo.py %currentDir%\..\videos\obj_video.mp4
+    @REM python demo.py %ov_demo_video%
     cd %currentDir%
 ) else if "!demotype!"=="Hailo" (
     if exist "%currentDir%/env/hailo-obj_det/Scripts/activate.bat" (
@@ -119,7 +152,7 @@ if "!demotype!"=="Intel" (
 	echo Start detection with tracker...
     @REM in run space, use 'python' comand
 	python %hailodemoDir%\detection_with_tracker.py -n %currentDir%\..\models\yolov5m_wo_spp_60p.hef -i %currentDir%\..\videos\hailo_video.mp4 -l %hailodemoDir%\coco.txt
-
+    @REM python %hailodemoDir%\detection_with_tracker.py -n %currentDir%\..\models\yolov5m_wo_spp_60p.hef -i %hailo_demo_video% -l %hailodemoDir%\coco.txt
 ) else if "!demotype!"=="Nvidia" (
     if exist "%currentDir%/env/torch_yolov11/Scripts/activate.bat" (
         call %currentDir%/env/torch_yolov11/Scripts/activate.bat
@@ -132,6 +165,7 @@ if "!demotype!"=="Intel" (
     cd %currentDir%\app\pytorch
     @REM in run space, use 'python' comand
     python yolov11_predict.py %currentDir%\..\videos\obj_video.mp4
+    @REM python yolov11_predict.py %ov_demo_video%
     cd %currentDir%
 
 ) else if "!demotype!"=="0" (
