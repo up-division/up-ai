@@ -181,3 +181,42 @@ class monitor:
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, bar_config['colors']['text'], 1, cv2.LINE_AA)
 
         return image
+
+
+    def draw_helptext(self, image):
+        rect_w = 225
+        rect_h = 100
+        margin = 5
+        # rect_top_left = (self.input_w - rect_w, margin)  # 矩形左上角位置
+        # rect_bottom_right = (self.input_w - margin, margin + rect_h)  # 矩形右下角位置
+        rect_top_left = (image.shape[1] - rect_w - margin, margin)  # 图片的最右边减去矩形宽度和 margin
+        rect_bottom_right = (image.shape[1] - margin, margin + rect_h)  # 矩形右下角
+
+        overlay = image.copy()
+
+        # 繪製灰色矩形
+        cv2.rectangle(overlay, rect_top_left, rect_bottom_right, (50, 50, 50), -1)
+        cv2.addWeighted(overlay, 0.5, image, 1 - 0.5, 0, image)
+
+        text_lines = [
+            "Quit : 'Esc' or 'q'",
+            "Open/Close CPU&Mem : 'a'",
+            "Open/Close CPU : 'c'",
+            "Open/Close Mem : 'm'"
+        ]
+        
+        # 設置字體、大小和颜色
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.45
+        color = (255, 255, 255)  # 白色文字
+        thickness = 1
+        
+        # 初始y坐標
+        y0, dy = margin + 20, 25
+        
+        for i, line in enumerate(text_lines):
+            y = y0 + i * dy
+            cv2.putText(image, line, (image.shape[1] - rect_w + 10, y), font, font_scale, color, thickness)
+            # cv2.putText(image, line, (self.input_w - rect_w + 10, y), font, font_scale, color, thickness)
+
+        return image

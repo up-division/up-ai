@@ -383,6 +383,11 @@ def draw_chart(usages, history, width, height):
     margin = 10
     graph_width = width - margin * 2
     graph_height = height - margin * 2
+
+    img = np.zeros((height, width, 3), dtype=np.uint8)
+    img.fill(255)
+    cv2.rectangle(img, (0, - margin * 2), (width, height), (169, 169, 169), -1)
+    cv2.line(img, (margin, height - margin), (width - margin, height - margin), (255, 255, 255), 2)  # X轴
     cv2.line(img, (margin, margin), (margin, height - margin), (255, 255, 255), 2)  # Y轴
 
     # 绘制Y轴刻度
@@ -585,6 +590,42 @@ def display_multi_cpu_usage_on_image(image, device_usage, display_cont, start_x=
     
     return image
 
+def draw_helptext(image):
+    rect_w = 225
+    rect_h = 100
+    margin = 5
+    # rect_top_left = (self.input_w - rect_w, margin)  # 矩形左上角位置
+    # rect_bottom_right = (self.input_w - margin, margin + rect_h)  # 矩形右下角位置
+    rect_top_left = (image.shape[1] - rect_w - margin, margin)  # 图片的最右边减去矩形宽度和 margin
+    rect_bottom_right = (image.shape[1] - margin, margin + rect_h)  # 矩形右下角
+
+    overlay = image.copy()
+
+    # 繪製灰色矩形
+    cv2.rectangle(overlay, rect_top_left, rect_bottom_right, (50, 50, 50), -1)
+    cv2.addWeighted(overlay, 0.5, image, 1 - 0.5, 0, image)
+
+    text_lines = [
+        "Quit : 'Esc' or 'q'",
+        "Open/Close CPU&Mem : 'a'",
+        "Open/Close CPU : 'c'",
+        "Open/Close Mem : 'm'"
+    ]
+    
+    # 設置字體、大小和颜色
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.45
+    color = (255, 255, 255)  # 白色文字
+    thickness = 1
+    
+    # 初始y坐標
+    y0, dy = margin + 20, 25
+    
+    for i, line in enumerate(text_lines):
+        y = y0 + i * dy
+        cv2.putText(image, line, (image.shape[1] - rect_w + 10, y), font, font_scale, color, thickness)
+    return image
+
 class VideoPlayer:
     """
     Custom video player to fulfill FPS requirements. You can set target FPS and output size,
@@ -773,7 +814,7 @@ def run_object_detection(
         cpu_num = psutil.cpu_count(logical=True)
         tot_mem=c_uint()
         tot_mem=psutil.virtual_memory().total
-        tot_mem=tot_mem/1048576000 
+        tot_mem=tot_mem/(1024*1024*1024)
     if os.name == 'nt':
         dll = ctypes.CDLL(now_dir+r'\AaeonHWUsage.dll')
         cpu_num=dll.GetCoreCount()
@@ -852,14 +893,17 @@ def run_object_detection(
             frame1=cv2.putText(
                 img=frame,
                 text=f"Inference time: {processing_time:.1f}ms ({fps:.1f} FPS)",
-                org=(int(f_width/3), 40),
+                org=(20, 110),
                 fontFace=cv2.FONT_HERSHEY_COMPLEX,
-                fontScale=f_width / 1000,
+                fontScale=f_width / 1500,
                 color=(0, 0, 255),
-                thickness=3,
+                thickness=2,
                 lineType=cv2.LINE_AA,
             )
             
+            # display helptext
+            frame1=draw_helptext(frame1)
+
             # dll.GetCPUUsage(cpu_use,cpu_num)
             if show_device['Memory']:
                 frame1=display_multi_cpu_usage_on_image(
@@ -881,7 +925,7 @@ def run_object_detection(
                 cv2.imshow(title, frame1)
                 key = cv2.waitKey(1)
                 # escape = 27
-                if key == 27:
+                if key == 27 or key == ord('q'):
                     break
                 elif key == ord('a'):  # 按下 'A' 切換 surprise 的顯示
                     all_show=True
