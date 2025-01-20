@@ -383,14 +383,6 @@ def draw_chart(usages, history, width, height):
     margin = 10
     graph_width = width - margin * 2
     graph_height = height - margin * 2
-
-    # 创建黑色画布用于绘制图表
-    # img = np.zeros((height, width, 3), dtype=np.uint8)
-    img = np.zeros((height, width, 3), dtype=np.uint8)
-    img.fill(255)
-    cv2.rectangle(img, (0, - margin * 2), (width, height), (169, 169, 169), -1)  # 灰色背景
-    # 绘制坐标轴
-    cv2.line(img, (margin, height - margin), (width - margin, height - margin), (255, 255, 255), 2)  # X轴
     cv2.line(img, (margin, margin), (margin, height - margin), (255, 255, 255), 2)  # Y轴
 
     # 绘制Y轴刻度
@@ -470,9 +462,13 @@ def quest_device_usage():
                 break
         if show_device['Memory']:
             if os.name == 'posix':
-                mem_read_ok =  psutil.virtual_memory()
-                device_usage['Memory']['use_mem']=mem_read_ok.active/1048576000
-                device_usage['Memory']['use_per']=device_usage['Memory']['use_mem']/device_usage['Memory']['tot_mem']
+                mem_read_ok = psutil.virtual_memory()
+                device_usage['ALL_memory']['use_mem']=mem_read_ok.active/(1024*1024*1024)
+                device_usage['ALL_memory']['use_per']=device_usage['ALL_memory']['use_mem']/device_usage['ALL_memory']['tot_mem']
+                program_process = psutil.Process(os.getpid())
+                program_memory = program_process.memory_info()
+                device_usage['program_memory']['use_mem']=program_memory.rss/(1024*1024*1024)
+                device_usage['program_memory']['use_per']=device_usage['program_memory']['use_mem']/device_usage['ALL_memory']['tot_mem']
             elif os.name == 'nt':
                 mem_read_ok = dll.GetMemoryUsage(ctypes.byref(mem_use_c))
                 device_usage['Memory']['use_mem']=mem_use_c.value/1000#/100
@@ -483,50 +479,67 @@ def quest_device_usage():
 
 def display_multi_cpu_usage_on_image(image, device_usage, display_cont, start_x=150, start_y=300, bar_width=200, bar_height=20, spacing=35):
     
+    mem_dict = device_usage.copy()
+    mem_dict.pop("CPU")
+
+    height, width, _ = image.shape
+    bar_config = {
+        'x': int(width * 0.02),
+        'y': int(height * 0.05),
+        'width': int(width * 0.3),
+        'height': int(height * 0.02),
+        'space': int(height * 0.03),
+        'opacity': 0.7,
+        'colors': {
+            'background': (50, 50, 50),
+            'bar_background': (100, 100, 100),
+            'bar_fill': (255, 105, 180),
+            'text': (255, 255, 255)
+        }
+    }
+
     # 創建透明區域的圖層
     overlay = image.copy()
-    word_width = 80
-    rect_x1 = start_x - 10
-    rect_y1 = start_y - 10
-    rect_x2 = start_x + bar_width + word_width + 10
-    rect_y2 = start_y + spacing
-    # rect_y2 = start_y + spacing * len(device_usage) #for multi device
+    word_width=int(bar_config['width'] * 0.35)
+    rect_x1 = bar_config['x'] - 10 
+    rect_y1 = bar_config['y'] - 10
+    rect_x2 = bar_config['x'] + bar_config['width'] + word_width +20 
+    rect_y2 = bar_config['y'] + bar_config['space'] * len(mem_dict)
     
     # 繪製半透明背景色塊
-    cv2.rectangle(overlay, (rect_x1, rect_y1), (rect_x2, rect_y2), (50, 50, 50), -1)
+    cv2.rectangle(overlay, (rect_x1, rect_y1), (rect_x2, rect_y2), bar_config['colors']['background'], -1)
     opacity = 0.7
-    image = cv2.addWeighted(overlay, opacity, image, 1 - opacity, 0)
+    # image = cv2.addWeighted(overlay, opacity, image, 1 - opacity, 0)
+    image = cv2.addWeighted(overlay, bar_config['opacity'], image, 1 - bar_config['opacity'], 0)
     
     # 繪製進度條和文字
-    for i, (device, usage) in enumerate(device_usage.items()):
+    for i, (device, usage) in enumerate(mem_dict.items()):
         if device == "CPU": #and not display_cont['CPU']:
             continue  # 跳過 CPU 的顯示
         if device == "Memory" and not display_cont['Memory']:
             continue  # 跳過 Memory 的顯示
-        # 計算進度條座標
-        bar_x1 = start_x + word_width
-        bar_y1 = start_y
-        # bar_y1 = start_y + i * spacing
-        
-        bar_x2 = int(bar_x1 + bar_width * usage['use_per'])
-        bar_y2 = bar_y1+ bar_height
-        # bar_y2 = bar_y1 + bar_height #for multi device
+
+        start_point_x=bar_config['x']
+        bar_x1 = bar_config['x'] + word_width
+        bar_y1 = bar_config['y'] + i * bar_config['space']
+        bar_x2 = int(bar_x1 + bar_config['width'] * usage['use_per'])# + text_width
+        bar_y2 = bar_y1 + bar_config['height']
         
         # 繪製進度條背景
-        cv2.rectangle(image, (bar_x1, bar_y1), (bar_x1 + bar_width, bar_y2), (100, 100, 100), -1)
-        
-        # 繪製進度條填充部分
-        cv2.rectangle(image, (bar_x1, bar_y1), (bar_x2, bar_y2), (255, 105, 180), -1)
-        
-        # 顯示硬體類別
-        cv2.putText(image, f"{device}", (start_x + 5, bar_y1 + bar_height - 5), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv2.LINE_AA)
-        # 顯示使用率
-        cv2.putText(image, "{use_mem:.1f}/{tot_mem:.1f} GB".format(**usage), (bar_x1 + 5, bar_y1 + bar_height - 5), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv2.LINE_AA)
+        # cv2.rectangle(image, (bar_x1, bar_y1), (bar_x1 + bar_width, bar_y2), (100, 100, 100), -1)
+        cv2.rectangle(image, (bar_x1, bar_y1), (bar_x1 + bar_config['width'], bar_y2), bar_config['colors']['bar_background'], -1)
 
-        # cv2.putText(image, f"{device}", (bar_x1 - 70, bar_y1 + bar_height - 5), 
-        #             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv2.LINE_AA) #for multi device
+        # 繪製進度條填充部分
+        # cv2.rectangle(image, (bar_x1, bar_y1), (bar_x2, bar_y2), (255, 105, 180), -1)
+        cv2.rectangle(image, (bar_x1, bar_y1), (bar_x2, bar_y2), bar_config['colors']['bar_fill'], -1)
+
+        # 顯示硬體類別
+        cv2.putText(image, f"{' '.join(device.split('_'))}", (start_point_x , bar_y1 + bar_config['height'] - 5), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, bar_config['colors']['text'], 1, cv2.LINE_AA)
+        # 顯示使用率
+        cv2.putText(image, "{use_mem:.1f}/{tot_mem:.1f} GB".format(**usage), 
+                        (bar_x1 + 5, bar_y1 + bar_config['height'] - 5),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, bar_config['colors']['text'], 1, cv2.LINE_AA)
     
     return image
 
@@ -733,14 +746,21 @@ def run_object_detection(
     "CPU": True,
     "Memory": True,
     }
-    device_usage = {
-    "CPU": [0.0]*cpu_num,
-    "Memory": {'use_per':0.1,'tot_mem':tot_mem,'use_mem':0.0},
-    }
+    if os.name == 'posix':
+        device_usage = {
+        "CPU": [0.0]*cpu_num,
+        "ALL_memory": {'use_per':0.1,'tot_mem':tot_mem,'use_mem':0.0},
+        "program_memory": {'use_per':0.1,'tot_mem':psutil.virtual_memory().total/((1024*1024*1024)),'use_mem':0.0},
+        }
+    elif os.name == 'nt':
+        device_usage = {
+        "CPU": [0.0]*cpu_num,
+        "Memory": {'use_per':0.1,'tot_mem':tot_mem,'use_mem':0.0},
+        }
     history = []
     try:
         # Create a video player to play with target fps.
-        player = VideoPlayer(source=source, flip=flip, fps=30, skip_first_frames=skip_first_frames)
+        player = VideoPlayer(source=source, flip=flip, fps=30, skip_first_frames=skip_first_frames,size=(1280,720))
         # Start capturing.
         player.start()
         if use_popup:
@@ -796,6 +816,7 @@ def run_object_detection(
                 thickness=3,
                 lineType=cv2.LINE_AA,
             )
+            
             # dll.GetCPUUsage(cpu_use,cpu_num)
             if show_device['Memory']:
                 frame1=display_multi_cpu_usage_on_image(
