@@ -2,8 +2,9 @@ from ultralytics import YOLO
 import argparse
 import cv2
 import os
-#import mo
-from monitor import monitor
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from win_multiframework_installation.app.monitor import Monitor
 
 model = YOLO('yolo11n.pt')  # 使用預訓練的 YOLOv8 模型
 
@@ -26,9 +27,8 @@ def main(args):
         # print(video_path)
         # cap = cv2.VideoCapture(video_path)
         cap = cv2.VideoCapture(args.input_source)
-    vedio_h,vedio_w = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    from monitor import monitor
-    monitor=monitor(vedio_h,vedio_w)
+    video_h,video_w = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    monitor=Monitor(video_h,video_w)
     monitor.start_cpu_monitor()
     monitor.start_mem_monitor()
     while cap.isOpened():
@@ -41,9 +41,11 @@ def main(args):
         annotated_frame = results[0].plot()
         if monitor.show_device['CPU']:
             chart = monitor.draw_cpu_chart()
-            annotated_frame[-(vedio_h//3):, 10:-10] = chart  # put cpu monitor in bottom
+            annotated_frame[-(video_h//3):, 10:-10] = chart  # put cpu monitor in bottom
         if monitor.show_device['Memory']:
             annotated_frame=monitor.draw_memory_usage_bar(annotated_frame)
+        if monitor.show_help:
+            annotated_frame=monitor.draw_helptext(annotated_frame)
         # show result
         cv2.imshow('YOLO Video Prediction', annotated_frame)
         input_key=cv2.waitKey(1)
@@ -63,6 +65,7 @@ def main(args):
             else:           #如果沒全開就先全開
                 monitor.start_cpu_monitor()
                 monitor.start_mem_monitor()
+            monitor.show_help=not monitor.show_help
         elif input_key == ord('c'):  # press 'c' open/close cpu  monitor
             # monitor.show_device['CPU'] = not monitor.show_device['CPU']
             if monitor.show_device['CPU']:
@@ -74,6 +77,9 @@ def main(args):
                 monitor.stop_mem_monitor()
             else:
                 monitor.start_mem_monitor()
+        elif input_key == ord('h'):  # press 'h' open/close help
+            monitor.show_help=not monitor.show_help
+
     monitor.stop_cpu_monitor()
     monitor.stop_mem_monitor()
     cap.release()

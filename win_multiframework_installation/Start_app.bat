@@ -36,7 +36,7 @@ cls
 echo ====================================
 echo          Function Menu
 echo ====================================
-echo 1. Object Detection - vedio
+echo 1. Object Detection - video
 echo 2. Object Detection - camera
 echo 3. Chatbot
 echo 0. exit
@@ -55,7 +55,7 @@ goto main_menu
 cls
 set "counter=1"
 echo ============================================
-echo  Select Hardware (Object Detection - vedio)
+echo  Select Hardware (Object Detection - video)
 echo ============================================
 if defined obj_matched_instances (
     for %%M in (!obj_matched_instances!) do (
@@ -118,7 +118,7 @@ for %%I in (%obj_matched_instances%) do (
 @REM     goto :input
 @REM )
 @REM if %v_source% == "1" (
-@REM     echo Use demo vedio.
+@REM     echo Use demo video.
 @REM     goto :Select_video_end
 @REM ) else if %v_source% == "2" (
 @REM     set /p input_string="Please enter video location: "

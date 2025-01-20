@@ -419,6 +419,45 @@ def draw_chart(usages, history, width, height):
 
     return img
 
+def draw_helptext(self, image):
+    # if self.show_help:
+    rect_w = 225
+    rect_h = 100
+    margin = 200
+    # rect_top_left = (self.input_w - rect_w, margin)  # 矩形左上角位置
+    # rect_bottom_right = (self.input_w - margin, margin + rect_h)  # 矩形右下角位置
+    rect_top_left = (image.shape[1] - rect_w - margin, margin)  # 图片的最右边减去矩形宽度和 margin
+    rect_bottom_right = (image.shape[1] - margin, margin + rect_h)  # 矩形右下角
+
+    overlay = image.copy()
+
+    # 繪製灰色矩形
+    cv2.rectangle(overlay, rect_top_left, rect_bottom_right, (50, 50, 50), -1)
+    cv2.addWeighted(overlay, 0.5, image, 1 - 0.5, 0, image)
+
+    text_lines = [
+        "Quit : 'Esc' or 'q'",
+        "Open/Close CPU&Mem : 'a'",
+        "Open/Close CPU : 'c'",
+        "Open/Close Mem : 'm'"
+    ]
+    
+    # 設置字體、大小和颜色
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.45
+    color = (255, 255, 255)  # 白色文字
+    thickness = 1
+    
+    # 初始y坐標
+    y0, dy = margin + 20, 25
+    
+    for i, line in enumerate(text_lines):
+        y = y0 + i * dy
+        cv2.putText(image, line, (image.shape[1] - rect_w + 10, y), font, font_scale, color, thickness)
+        # cv2.putText(image, line, (self.input_w - rect_w + 10, y), font, font_scale, color, thickness)
+
+    return image
+
 def draw_progress_bar(image, value, position, size, bar_color=(0, 255, 0), bg_color=(50, 50, 50), thickness=1):
     """
     Draw a progress bar on an image.
@@ -450,6 +489,7 @@ def quest_device_usage():
     global thread_runing_flag
     mem_use_c=c_uint()
     global cpu_use,cpu_num,mem_use
+    program_process = psutil.Process(os.getpid())
     while thread_runing_flag:
         if show_device['CPU']:
             if os.name == 'posix':  # ubuntu
@@ -465,7 +505,6 @@ def quest_device_usage():
                 mem_read_ok = psutil.virtual_memory()
                 device_usage['ALL_memory']['use_mem']=mem_read_ok.active/(1024*1024*1024)
                 device_usage['ALL_memory']['use_per']=device_usage['ALL_memory']['use_mem']/device_usage['ALL_memory']['tot_mem']
-                program_process = psutil.Process(os.getpid())
                 program_memory = program_process.memory_info()
                 device_usage['program_memory']['use_mem']=program_memory.rss/(1024*1024*1024)
                 device_usage['program_memory']['use_per']=device_usage['program_memory']['use_mem']/device_usage['ALL_memory']['tot_mem']
@@ -473,6 +512,9 @@ def quest_device_usage():
                 mem_read_ok = dll.GetMemoryUsage(ctypes.byref(mem_use_c))
                 device_usage['Memory']['use_mem']=mem_use_c.value/1000#/100
                 device_usage['Memory']['use_per']=device_usage['Memory']['use_mem']/device_usage['Memory']['tot_mem']
+                program_memory = program_process.memory_info()
+                device_usage['program_memory']['use_mem']=program_memory.rss/(1024*1024*1024)
+                device_usage['program_memory']['use_per']=device_usage['program_memory']['use_mem']/device_usage['ALL_memory']['tot_mem']
             else :
                 break
         threading.Event().wait(0.1)  # 定时 1 秒
@@ -758,6 +800,7 @@ def run_object_detection(
         "Memory": {'use_per':0.1,'tot_mem':tot_mem,'use_mem':0.0},
         }
     history = []
+    show_help=True
     try:
         # Create a video player to play with target fps.
         player = VideoPlayer(source=source, flip=flip, fps=30, skip_first_frames=skip_first_frames,size=(1280,720))
@@ -830,6 +873,8 @@ def run_object_detection(
                 # 创建叠加图片，将图表放置在图片底部
                 # overlay_image = frame1.copy()
                 frame1[-chart_height:, 10:-10] = chart  # 将图表放置在底部
+            if show_help:
+                frame1=draw_helptext(frame1)
             # Use this workaround if there is flickering.
             if use_popup:
                 #cv2.imshow(winname=title, mat=frame)
@@ -851,12 +896,14 @@ def run_object_detection(
                     else:           #如果沒全開就先全開
                         for device, device_stat in show_device.items():
                             show_device[device]=True
-                elif key == ord('c'):  # 按下 'A' 切換 surprise 的顯示
+                elif key == ord('c'):  # press 'c' open/close cpu  monitor
                     show_device['CPU'] = not show_device['CPU']
                     if show_device['CPU']==False:
                         history=[]
-                elif key == ord('m'):  # 按下 'A' 切換 surprise 的顯示
+                elif key == ord('m'):  # press 'm' open/close memory monitor
                     show_device['Memory'] = not show_device['Memory']
+                elif key == ord('h'):  # press 'h' open/close help
+                    show_help=not show_help
 
                 
             else:

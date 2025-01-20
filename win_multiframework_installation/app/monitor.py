@@ -4,13 +4,14 @@ import cv2
 import psutil
 import os
 
-class monitor:
+class Monitor:
     def __init__(self,image_height,image_width):
         cpu_num=psutil.cpu_count(logical=True)
         self.show_device = {
         "CPU": True,
         "Memory": True,
         }
+        self.show_help=True
         self.device_usage = {
         "CPU": {'core_num':cpu_num,'core_usage':[0.0]*cpu_num},
         "ALL_memory": {'use_per':0.1,'tot_mem':psutil.virtual_memory().total/((1024*1024*1024)),'use_mem':1.0},
@@ -35,6 +36,7 @@ class monitor:
             },
             'text' : {
                 'width' : 150,
+                'height' : 15,
                 'fontFace' : cv2.FONT_HERSHEY_SIMPLEX,
                 'fontScale' : float(format(image_width / 2400,'.1f')),
                 'color' : (255, 255, 255),
@@ -42,9 +44,7 @@ class monitor:
                 'lineType' : cv2.LINE_AA,
             }
         }
-        # show_bar
-        # defualt_str='Inference time: 10000 ms 1000 FPS'
-        # text_size, baseline = cv2.getTextSize(defualt_str, self.fps_text_config['text']['y'],  self.fps_text_config['text']['fontScale'],  self.fps_text_config['text']['thickness'])
+        self.cal_mem_bar_text()
         self.fps_text_config = {
             'x': int(image_width * 0.5),
             'y': int(image_height * 0.05),
@@ -59,7 +59,7 @@ class monitor:
         }
         fps_text_width,self.fps_text_config['y']=self.cal_fps_loca(self.fps_text_config['fontFace'], self.fps_text_config['fontScale'],
                                                                               self.fps_text_config['thickness'],self.fps_text_config['space'])
-        # self.fps_text_config['x'] = image_width - fps_text_width
+        self.fps_text_config['x'] = image_width - fps_text_width
         # print(str(self.fps_text_config['x']),str(self.fps_text_config['y']))
 
 
@@ -104,11 +104,8 @@ class monitor:
         defualt_str='Inference time: 10000 ms 1000 FPS'
         text_size, baseline = cv2.getTextSize(defualt_str, fontface, font_scale, thickness)
         text_width, text_height = text_size
-    def cal_fps_loca(self, fontface, font_scale, thickness,space):
-        defualt_str='Inference time: 10000 ms 1000 FPS'
-        text_size, baseline = cv2.getTextSize(defualt_str, fontface, font_scale, thickness)
-        text_width, text_height = text_size
-        return text_width + space, text_height + space
+        return text_width, text_height
+    
     def show_fps(self, image,frame_infer_time):
         fps = 1 / frame_infer_time
         infer_time_ms = frame_infer_time * 1000
@@ -123,6 +120,14 @@ class monitor:
                 lineType=self.fps_text_config['lineType'],
             )
         return proccessed_image
+    
+    def cal_mem_bar_text(self):
+        max_len_device=''
+        for device in self.device_usage:
+            if len(device) > len(max_len_device):
+                max_len_device=device
+        (self.mem_bar_config['text']['width'],self.mem_bar_config['text']['height']), baseline = cv2.getTextSize(max_len_device, self.mem_bar_config['text']['fontFace'],  self.mem_bar_config['text']['fontScale'],  self.mem_bar_config['text']['thickness'])
+
     def draw_cpu_chart(self):
         """
         CPU使用率表
@@ -212,7 +217,7 @@ class monitor:
             
             # 計算進度條座標
             start_point_x=self.mem_bar_config['x']
-            bar_x1 = self.mem_bar_config['x'] + self.mem_bar_config['text']['color']
+            bar_x1 = self.mem_bar_config['x'] + self.mem_bar_config['text']['width']
             bar_y1 = self.mem_bar_config['y'] + i * self.mem_bar_config['space']
             bar_x2 = int(bar_x1 + self.mem_bar_config['width'] * usage['use_per'])# + text_width
             bar_y2 = bar_y1 + self.mem_bar_config['height']
@@ -230,5 +235,44 @@ class monitor:
             # 顯示使用率
             cv2.putText(image, "{use_mem:.1f}/{tot_mem:.1f} GB".format(**usage), (bar_x1 + 5, bar_y1 + self.mem_bar_config['height']),self.mem_bar_config['text']['fontFace'],
                         self.mem_bar_config['text']['fontScale'], self.mem_bar_config['text']['color'], self.mem_bar_config['text']['thickness'], self.mem_bar_config['text']['lineType'])
+
+        return image
+    
+    def draw_helptext(self, image):
+        # if self.show_help:
+        rect_w = 225
+        rect_h = 100
+        margin = 200
+        # rect_top_left = (self.input_w - rect_w, margin)  # 矩形左上角位置
+        # rect_bottom_right = (self.input_w - margin, margin + rect_h)  # 矩形右下角位置
+        rect_top_left = (image.shape[1] - rect_w - margin, margin)  # 图片的最右边减去矩形宽度和 margin
+        rect_bottom_right = (image.shape[1] - margin, margin + rect_h)  # 矩形右下角
+
+        overlay = image.copy()
+
+        # 繪製灰色矩形
+        cv2.rectangle(overlay, rect_top_left, rect_bottom_right, (50, 50, 50), -1)
+        cv2.addWeighted(overlay, 0.5, image, 1 - 0.5, 0, image)
+
+        text_lines = [
+            "Quit : 'Esc' or 'q'",
+            "Open/Close CPU&Mem : 'a'",
+            "Open/Close CPU : 'c'",
+            "Open/Close Mem : 'm'"
+        ]
+        
+        # 設置字體、大小和颜色
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.45
+        color = (255, 255, 255)  # 白色文字
+        thickness = 1
+        
+        # 初始y坐標
+        y0, dy = margin + 20, 25
+        
+        for i, line in enumerate(text_lines):
+            y = y0 + i * dy
+            cv2.putText(image, line, (image.shape[1] - rect_w + 10, y), font, font_scale, color, thickness)
+            # cv2.putText(image, line, (self.input_w - rect_w + 10, y), font, font_scale, color, thickness)
 
         return image

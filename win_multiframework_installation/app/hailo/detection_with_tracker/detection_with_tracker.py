@@ -16,6 +16,8 @@ import time
 
 #sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import HailoAsyncInference
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from win_multiframework_installation.app.monitor import Monitor
 
 
 def initialize_arg_parser() -> argparse.ArgumentParser:
@@ -170,12 +172,11 @@ def main() -> None:
         print("Streaming video!")
         cap = cv2.VideoCapture(args.input_video)
 
-    vedio_h,vedio_w = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-    from monitor import monitor
-    monitor=monitor(vedio_h,vedio_w)
+    video_h,video_w = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    monitor = Monitor(video_h,video_w)
     monitor.start_cpu_monitor()
     monitor.start_mem_monitor()
+    show_help=True
     
     while(True):
         ret, frame = cap.read()
@@ -217,9 +218,11 @@ def main() -> None:
         
         if monitor.show_device['CPU']:
             chart = monitor.draw_cpu_chart()
-            annotated_labeled_frame[-(vedio_h//3):, 10:-10] = chart  # put cpu monitor in bottom
+            annotated_labeled_frame[-(video_h//3):, 10:-10] = chart  # put cpu monitor in bottom
         if monitor.show_device['Memory']:
             annotated_labeled_frame=monitor.draw_memory_usage_bar(annotated_labeled_frame)
+        if monitor.show_help:
+            annotated_labeled_frame=monitor.draw_helptext(annotated_labeled_frame)
         # show
         cv2.imshow('Hailo Demo Video', annotated_labeled_frame)
 
@@ -241,6 +244,7 @@ def main() -> None:
             else:           #如果沒全開就先全開
                 monitor.start_cpu_monitor()
                 monitor.start_mem_monitor()
+            monitor.show_help=not monitor.show_help
         elif input_key == ord('c'):  # press 'c' open/close cpu  monitor
             # monitor.show_device['CPU'] = not monitor.show_device['CPU']
             if monitor.show_device['CPU']:
@@ -252,6 +256,8 @@ def main() -> None:
                 monitor.stop_mem_monitor()
             else:
                 monitor.start_mem_monitor()
+        elif input_key == ord('h'):  # press 'h' open/close help
+            monitor.show_help=not monitor.show_help
 
     monitor.stop_cpu_monitor()
     monitor.stop_mem_monitor()        
