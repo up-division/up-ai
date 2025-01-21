@@ -515,8 +515,8 @@ def quest_device_usage():
                 device_usage['program_memory']['use_per']=device_usage['program_memory']['use_mem']/device_usage['ALL_memory']['tot_mem']
             elif os.name == 'nt':
                 mem_read_ok = dll.GetMemoryUsage(ctypes.byref(mem_use_c))
-                device_usage['Memory']['use_mem']=mem_use_c.value/1000#/100
-                device_usage['Memory']['use_per']=device_usage['Memory']['use_mem']/device_usage['Memory']['tot_mem']
+                device_usage['ALL_memory']['use_mem']=mem_use_c.value/1000#/100
+                device_usage['ALL_memory']['use_per']=device_usage['ALL_memory']['use_mem']/device_usage['ALL_memory']['tot_mem']
                 program_memory = program_process.memory_info()
                 device_usage['program_memory']['use_mem']=program_memory.rss/(1024*1024*1024)
                 device_usage['program_memory']['use_per']=device_usage['program_memory']['use_mem']/device_usage['ALL_memory']['tot_mem']
@@ -812,15 +812,14 @@ def run_object_detection(
     cpu_use=C_Integers()
     if os.name == 'posix':
         cpu_num = psutil.cpu_count(logical=True)
-        tot_mem=c_uint()
         tot_mem=psutil.virtual_memory().total
         tot_mem=tot_mem/(1024*1024*1024)
     if os.name == 'nt':
         dll = ctypes.CDLL(now_dir+r'\AaeonHWUsage.dll')
         cpu_num=dll.GetCoreCount()
         tot_mem=c_uint()
-        _ = dll.GetTotMemory(ctypes.byref(tot_mem))
-        tot_mem=tot_mem.value/1000
+        tot_mem=psutil.virtual_memory().total
+        tot_mem=tot_mem/(1024*1024*1024)
     
 
     compiled_model = core.compile_model(model, device)
@@ -829,17 +828,11 @@ def run_object_detection(
     "CPU": True,
     "Memory": True,
     }
-    if os.name == 'posix':
-        device_usage = {
-        "CPU": [0.0]*cpu_num,
-        "ALL_memory": {'use_per':0.1,'tot_mem':tot_mem,'use_mem':0.0},
-        "program_memory": {'use_per':0.1,'tot_mem':psutil.virtual_memory().total/((1024*1024*1024)),'use_mem':0.0},
-        }
-    elif os.name == 'nt':
-        device_usage = {
-        "CPU": [0.0]*cpu_num,
-        "Memory": {'use_per':0.1,'tot_mem':tot_mem,'use_mem':0.0},
-        }
+    device_usage = {
+    "CPU": [0.0]*cpu_num,
+    "ALL_memory": {'use_per':0.1,'tot_mem':tot_mem,'use_mem':0.0},
+    "program_memory": {'use_per':0.1,'tot_mem':psutil.virtual_memory().total/((1024*1024*1024)),'use_mem':0.0},
+    }
     history = []
     show_help=True
     try:
