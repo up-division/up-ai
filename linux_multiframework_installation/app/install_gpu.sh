@@ -1,11 +1,13 @@
 #!/bin/bash
 
-echo "Install gpu driver"
 ori_dir=$(pwd)
 
 # Install GPU driver
 echo "Install gpu driver......"
-mkdir -p $PWD/app/driver/cuda
+
+if [ ! -d "$PWD/app/driver/cuda" ]; then
+	mkdir -p $PWD/app/driver/cuda
+fi
 cd $ori_dir/app/driver/cuda
 
 if [ ! -f "intel-level-zero-npu_1.10.0.20241107-11729849322_ubuntu22.04_amd64.deb" ]; then

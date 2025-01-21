@@ -6,7 +6,10 @@ ori_dir=$(pwd)
 echo "Install npu driver......"
 USER_NAME=$(whoami)
 sudo dpkg --purge --force-remove-reinstreq intel-driver-compiler-npu intel-fw-npu intel-level-zero-npu
-mkdir -p $ori_dir/app/driver/npu
+
+if [ ! -d "$ori_dir/app/driver/npu" ]; then
+	mkdir -p $ori_dir/app/driver/npu
+fi
 cd $ori_dir/app/driver/npu
 
 if [ ! -f "intel-driver-compiler-npu_1.10.0.20241107-11729849322_ubuntu22.04_amd64.deb" ]; then
@@ -40,7 +43,14 @@ else
 fi
 
 sudo dpkg -i level-zero*.deb
-sudo chown $USER_NAME:$USER_NAME /dev/accel/accel0
+
+sudo chown root:render /dev/accel/accel0
+sudo chmod g+rw /dev/accel/accel0
+sudo usermod -a -G render $USER_NAME
+
+sudo bash -c "echo 'SUBSYSTEM==\"accel\", KERNEL==\"accel*\", GROUP=\"render\", MODE=\"0660\"' > /etc/udev/rules.d/10-intel-vpu.rules"
+sudo udevadm control --reload-rules
+sudo udevadm trigger --subsystem-match=accel
 echo "NPU Installation Completed!"
 
 # Install kernel
