@@ -4,7 +4,7 @@ import cv2
 import psutil
 import os
 
-class monitor:
+class Monitor:
     def __init__(self,image_height,image_width):
         cpu_num=psutil.cpu_count(logical=True)
         self.show_device = {
