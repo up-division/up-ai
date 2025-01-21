@@ -2,19 +2,20 @@ from ultralytics import YOLO
 import argparse
 import cv2
 import os
-# import sys
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from monitor import Monitor
 # from win_multiframework_installation.app.monitor import Monitor
 import time
 import collections
 import numpy as np
-from monitor import Monitor
+
 
 model = YOLO('yolo11n.pt')  # 使用預訓練的 YOLOv8 模型
 
 def arg_parser() :
     parser = argparse.ArgumentParser()
-    parser.add_argument("input_source", help="Please input inference source.ex. C:\\<path>\\inference_vedio.mp4 or camera number")
+    parser.add_argument("input_source", help="Please input inference source.ex. C:\\<path>\\inference_video.mp4 or camera number")
     return parser
 # load YOLO model（"yolov8n", "yolov8s" ...）
 
@@ -52,37 +53,36 @@ def main(args):
 
         # 進行推論
         results = model(frame_resized)
-
+        stop_time = time.time()
         annotated_frame = results[0].plot()
-        monitor.draw_helptext(annotated_frame)
+
         if monitor.show_device['CPU']:
             chart = monitor.draw_cpu_chart()
             annotated_frame[-(video_h//3):, 10:-10] = chart  # put cpu monitor in bottom
         if monitor.show_device['Memory']:
             annotated_frame=monitor.draw_memory_usage_bar(annotated_frame)
         if monitor.show_help:
-            # annotated_frame=monitor.draw_helptext(annotated_frame)
+            annotated_frame=monitor.draw_helptext(annotated_frame)
 
-            stop_time = time.time()
-            processing_times.append(stop_time - start_time)
+        processing_times.append(stop_time - start_time)
 
-            if len(processing_times) > 200:
-                processing_times.popleft()
+        if len(processing_times) > 200:
+            processing_times.popleft()
 
-            processing_time = np.mean(processing_times) * 1000  # ms
-            fps = 1000 / processing_time
+        processing_time = np.mean(processing_times) * 1000  # ms
+        fps = 1000 / processing_time
 
-            frame_height, frame_width = annotated_frame.shape[:2]
-            annotated_frame = cv2.putText(
-                annotated_frame,
-                f"Inference time: {processing_time:.1f}ms ({fps:.1f} FPS)",
-                org=(20, 110),
-                fontFace=cv2.FONT_HERSHEY_COMPLEX,
-                fontScale=frame_width / 1500,
-                color=(0, 0, 255),
-                thickness=2,
-                lineType=cv2.LINE_AA,
-            )
+        frame_height, frame_width = annotated_frame.shape[:2]
+        annotated_frame = cv2.putText(
+            annotated_frame,
+            f"Inference time: {processing_time:.1f}ms ({fps:.1f} FPS)",
+            org=(20, 110),
+            fontFace=cv2.FONT_HERSHEY_COMPLEX,
+            fontScale=frame_width / 1500,
+            color=(0, 0, 255),
+            thickness=2,
+            lineType=cv2.LINE_AA,
+        )
 
 
         # show result

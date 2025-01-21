@@ -243,16 +243,15 @@ class Monitor:
         rect_w = 225
         rect_h = 100
         margin = 200
-        # rect_top_left = (self.input_w - rect_w, margin)  # 矩形左上角位置
-        # rect_bottom_right = (self.input_w - margin, margin + rect_h)  # 矩形右下角位置
-        rect_top_left = (image.shape[1] - rect_w - margin, margin)  # 图片的最右边减去矩形宽度和 margin
-        rect_bottom_right = (image.shape[1] - margin, margin + rect_h)  # 矩形右下角
-
         overlay = image.copy()
 
         # 繪製灰色矩形
-        cv2.rectangle(overlay, rect_top_left, rect_bottom_right, (50, 50, 50), -1)
-        cv2.addWeighted(overlay, 0.5, image, 1 - 0.5, 0, image)
+        # rect_top_left = (self.input_w - rect_w, margin)  # 矩形左上角位置
+        # rect_bottom_right = (self.input_w - margin, margin + rect_h)  # 矩形右下角位置
+        # rect_top_left = (image.shape[1] - rect_w - margin, margin)  # 图片的最右边减去矩形宽度和 margin
+        # rect_bottom_right = (image.shape[1] - margin, margin + rect_h)  # 矩形右下角
+        # cv2.rectangle(overlay, rect_top_left, rect_bottom_right, (50, 50, 50), -1)
+        # cv2.addWeighted(overlay, 0.5, image, 1 - 0.5, 0, image)
 
         text_lines = [
             "Quit : 'Esc' or 'q'",

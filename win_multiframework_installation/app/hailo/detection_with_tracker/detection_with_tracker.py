@@ -17,7 +17,8 @@ import time
 #sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import HailoAsyncInference
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from win_multiframework_installation.app.monitor import Monitor
+#from win_multiframework_installation.app.monitor import Monitor
+from monitor import Monitor
 
 
 def initialize_arg_parser() -> argparse.ArgumentParser:
@@ -218,7 +219,7 @@ def main() -> None:
         
         if monitor.show_device['CPU']:
             chart = monitor.draw_cpu_chart()
-            annotated_labeled_frame[-(video_h//3):, 10:-10] = chart  # put cpu monitor in bottom
+            annotated_labeled_frame[-chart.shape[0]:, 10:-10] = chart  # put cpu monitor in bottom
         if monitor.show_device['Memory']:
             annotated_labeled_frame=monitor.draw_memory_usage_bar(annotated_labeled_frame)
         if monitor.show_help:
