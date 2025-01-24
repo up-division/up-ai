@@ -35,8 +35,8 @@ def main(args):
     video_h,video_w = (720,1280)
 
     monitor=Monitor(video_h,video_w)
-    monitor.start_cpu_monitor()
-    monitor.start_mem_monitor()
+    # monitor.start_cpu_monitor()
+    # monitor.start_mem_monitor()
 
     processing_times = collections.deque()
 
@@ -104,7 +104,6 @@ def main(args):
             else:           #如果沒全開就先全開
                 monitor.start_cpu_monitor()
                 monitor.start_mem_monitor()
-            monitor.show_help=not monitor.show_help
         elif input_key == ord('c'):  # press 'c' open/close cpu  monitor
             # monitor.show_device['CPU'] = not monitor.show_device['CPU']
             if monitor.show_device['CPU']:
@@ -116,8 +115,6 @@ def main(args):
                 monitor.stop_mem_monitor()
             else:
                 monitor.start_mem_monitor()
-        elif input_key == ord('h'):  # press 'h' open/close help
-            monitor.show_help=not monitor.show_help
 
     monitor.stop_cpu_monitor()
     monitor.stop_mem_monitor()

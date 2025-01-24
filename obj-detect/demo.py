@@ -825,8 +825,8 @@ def run_object_detection(
     compiled_model = core.compile_model(model, device)
     global show_device,device_usage
     show_device = {
-    "CPU": True,
-    "Memory": True,
+    "CPU": False,
+    "Memory": False,
     }
     device_usage = {
     "CPU": [0.0]*cpu_num,
