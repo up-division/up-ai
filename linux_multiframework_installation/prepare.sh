@@ -15,7 +15,15 @@ else
     exit 0
 fi
 
-
+# check network connect
+ping -c 4 8.8.8.8 > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "Network connection successful!"
+else
+    echo "Network connection failed!"
+    echo "Please check your network connection!"
+    exit 0
+fi
 
 sudo apt update
 sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev liblzma-dev libbz2-dev libnss3-dev libssl-dev libreadline-dev libffi-dev wget python3-venv

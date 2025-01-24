@@ -8,8 +8,8 @@ class Monitor:
     def __init__(self,image_height,image_width):
         cpu_num=psutil.cpu_count(logical=True)
         self.show_device = {
-        "CPU": True,
-        "Memory": True,
+        "CPU": False,
+        "Memory": False,
         }
         self.device_usage = {
         "CPU": {'core_num':cpu_num,'core_usage':[0.0]*cpu_num},
