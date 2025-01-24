@@ -20,5 +20,5 @@ transformers_stream_generator
 einops
 onnx
 optimum
-optimum-intel
+optimum-intel>=1.21.0
 ipython

@@ -2,30 +2,30 @@
 set "currentDir=%~dp0" 
 set "hailodemoDir=%currentDir%\app\hailo\detection_with_tracker"
 set "matched_instances=Intel;"
-REM 定義 Hailo 和 Nvidia 類的 Instance ID 列表
+REM  List of Instance IDs that define Hailo and Nvidia classes
 set "Hailo=2864"
 set "Nvidia=24FA"
 
-REM 臨時文件用於存儲 pnputil 的輸出
+REM Temporary file used to store the output of pnputil
 set "tempfile=%temp%\pnputil_output.txt"
 
 setlocal enabledelayedexpansion
 pnputil /enum-devices /connected > "%tempfile%"
 set "com_instance_ids=Hailo;Nvidia"
-REM 遍歷所有類別
+REM Browse all categories
 set "chatbot_matched_instances=!matched_instances!"
 set "obj_matched_instances=!matched_instances!"
 for %%I in (%com_instance_ids%) do (
-    REM 動態展開每個類別的變數值
+    REM Dynamically expand variable values ​​for each category
     set "current_list=!%%I!"
     
-    REM 遍歷該類別中的每個 Instance ID
+    REM Iterate over each instance ID in a category
     for %%J in (!current_list!) do (
-        REM 假設文件 tempfile.txt 中需要匹配
+        REM Suppose the file tempfile.txt needs to match
         @REM set "device_instances=PCI\VEN_8086&DEV_%%J"
         findstr /c:"%%J" "%tempfile%" >nul
         if !errorlevel! equ 0 (
-            REM 如果匹配成功，將該 Instance ID 添加到 matched_instances
+            REM If the match is successful, add the Instance ID to matched_instances
             set "obj_matched_instances=!obj_matched_instances!%%I;"
         )
     )
@@ -68,7 +68,7 @@ if defined obj_matched_instances (
 echo 0. exit
 echo ============================================
 set /p hardware="Please input number: "
-REM 檢查輸入是否為數字
+REM Check if the input is a number
 for /F "delims=0123456789" %%A in ("%hardware%") do (
     echo Invalid input. Please enter a number.
     goto :input
@@ -83,7 +83,7 @@ if %hardware% GTR !counter! (
 if "%hardware%"=="0" (
     goto main_menu
 )
-REM 映射數值
+REM map value
 set "current_index=1"
 for %%I in (%obj_matched_instances%) do (
     if !current_index! equ %hardware% (
@@ -195,7 +195,7 @@ if defined obj_matched_instances (
 echo 0. exit
 echo ============================================
 set /p hardware="Please input number: "
-REM 檢查輸入是否為數字
+REM Check if the input is a number
 for /F "delims=0123456789" %%A in ("%hardware%") do (
     echo Invalid input. Please enter a number.
     goto :input
@@ -210,7 +210,7 @@ if %hardware% GTR !counter! (
 if "%hardware%"=="0" (
     goto main_menu
 )
-REM 映射數值
+REM map value
 set "current_index=1"
 for %%I in (%obj_matched_instances%) do (
     if !current_index! equ %hardware% (
@@ -288,7 +288,7 @@ if defined chatbot_matched_instances (
 echo 0. exit
 echo ============================================
 set /p hardware="Please input number: "
-REM 檢查輸入是否為數字
+REM Check if the input is a number
 for /F "delims=0123456789" %%A in ("%hardware%") do (
     echo Invalid input. Please enter a number.
     goto :input
@@ -303,7 +303,7 @@ if %hardware% GTR !counter! (
 if "%hardware%"=="0" (
     goto main_menu
 )
-REM 映射數值
+REM map value
 set "current_index=1"
 for %%I in (%chatbot_matched_instances%) do (
     if !current_index! equ %hardware% (
@@ -317,8 +317,8 @@ for %%I in (%chatbot_matched_instances%) do (
 
 if "%demotype%"=="Intel" (
     if exist "%currentDir%/env/ov-chatbot/Scripts/activate.bat" (
-        @REM call %currentDir%/env/ov-chatbot/Scripts/activate.bat
-        echo Use Local Environment!!!
+        call %currentDir%/env/ov-chatbot/Scripts/activate.bat
+        @REM echo Use Local Environment!!!
     ) else (
         echo This demo environment not install,please rechoose!
         pause

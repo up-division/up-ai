@@ -175,8 +175,8 @@ def main() -> None:
 
     video_h,video_w = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     monitor = Monitor(video_h,video_w)
-    monitor.start_cpu_monitor()
-    monitor.start_mem_monitor()
+    # monitor.start_cpu_monitor()
+    # monitor.start_mem_monitor()
     show_help=True
     
     while(True):

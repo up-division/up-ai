@@ -2,6 +2,21 @@
 set "currentDir=%~dp0" 
 cd %currentDir%
 @REM git clone https://github.com/up-division/up-ai.git %currentDir%\up-ai
+set pip_web=pypi.org
+setlocal enabledelayedexpansion
+:chk_net
+cd .
+ping -n 1 %pip_web% >nul 2>&1
+if errorlevel 1 (
+    echo Connect network fail...
+    echo Please connect to the Internet and click any button to continue.
+    pause
+    goto chk_net
+    
+) else (
+    echo Connect successfully!
+)
+endlocal
 
 echo "Upgrade pip......"
 python -m pip install --upgrade pip
@@ -17,7 +32,7 @@ if not exist "%currentDir%\..\models" (
 )
 
 :main_menu
-REM 第一層選擇 - 物件偵測或聊天機器人
+REM First level choice - item detection or chatbot
 cls
 echo =========================================
 echo                Install Menu
@@ -36,7 +51,7 @@ pause
 goto main_menu
 
 :install_env
-REM 第二層選擇 - 選擇硬體
+REM Second level selection - select hardware
 cls
 echo ============================================
 echo       Select Environment Installation
@@ -65,7 +80,7 @@ pause
 goto main_menu
 
 :auto
-REM 第二層選擇 - 選擇硬體
+REM Second level selection - select hardware
 cls
 echo ====================================
 echo          Auto install all 

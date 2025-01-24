@@ -8,8 +8,8 @@ class Monitor:
     def __init__(self,image_height,image_width):
         cpu_num=psutil.cpu_count(logical=True)
         self.show_device = {
-        "CPU": True,
-        "Memory": True,
+        "CPU": False,
+        "Memory": False,
         }
         self.show_help=True
         self.device_usage = {
@@ -257,7 +257,8 @@ class Monitor:
             "Quit : 'Esc' or 'q'",
             "Open/Close CPU&Mem : 'a'",
             "Open/Close CPU : 'c'",
-            "Open/Close Mem : 'm'"
+            "Open/Close Mem : 'm'",
+            "Open/Close Help : 'h'"
         ]
         
         # 設置字體、大小和颜色

@@ -6,12 +6,30 @@ set "py_installed_path_alluser=%ProgramFiles%\Python310"
 set python_web=www.python.org
 set git_web=github.com
 
+@echo off
+:: Check it is running with administrator
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo This script requires administrator rights to run.
+    choice /m "Do you want to restart this script with administrator rights?" /c YN /d N /t 10
+    if errorlevel 2 (
+        echo Cancel execution.
+        pause
+        exit /b
+    )
+    echo Restarting script, please wait...
+    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b
+)
+
+echo Executed as administrator!
+
 echo "Install Visual C++......"
 set "is_installed=0x0"
 for /F "tokens=3" %%A in ('reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\X64" /v Installed') do (
     set "is_installed=%%A"
 )
-REM 啟用延遲展開來檢查結果
+REM Enable delayed expansion to check the results
 setlocal enabledelayedexpansion
 
 if "!is_installed!"=="0x1" (
@@ -22,7 +40,6 @@ if "!is_installed!"=="0x1" (
     echo Visual C++ installation Complete!
     goto vc_end
 )
-endlocal
 :vc_menu
 echo [Y] Update VC++
 echo [N] Pass update VC++
@@ -43,6 +60,7 @@ if /i "!choice!"=="Y" (
 )
 
 :vc_end
+endlocal
 
 :install_python
 @REM reset %errorlevel%
@@ -98,30 +116,30 @@ if "%py_usr%"=="1" (
 
 :install_python_end
 
-@REM @REM reset %errorlevel%
-@REM cd .
-@REM :install_git
-@REM echo "Install git now..."
-@REM if not exist "%programfiles%\Git" (
-@REM     if not exist "%currentDir%\app\Git-2.47.0-64-bit.exe" (
-@REM         echo Download git 2.47 installer now.
-@REM         ping -n 1 %git_web% >nul 2>&1
-@REM         if %errorlevel%==0 (
-@REM             echo Connet Github now...
-@REM         ) else (
-@REM             echo Connet Github fail...
-@REM             echo Please connect to the Internet and click any button to continue.
-@REM             goto install_git
-@REM         )
-@REM         curl -L -o %currentDir%/app/git-installer.exe "https://github.com/git-for-windows/git/releases/download/v2.47.0.windows.1/Git-2.47.0-64-bit.exe"
-@REM         @REM curl -L -o %currentDir%/app/git-lfs.exe  "https://github.com/git-lfs/git-lfs/releases/download/v3.5.1/git-lfs-windows-v3.5.1.exe"
-@REM     )
-@REM     echo Install git 2.47
-@REM     %currentDir%/app/git-installer.exe /SILENT
-@REM     @REM %currentDir%/app/git-lfs.exe /SILENT
-@REM     goto install_git
-@REM )
-@REM echo "GIT installed successfully!"
+@REM reset %errorlevel%
+cd .
+:install_git
+echo "Install git now..."
+if not exist "%programfiles%\Git\git-cmd.exe" (
+    if not exist "%currentDir%\app\Git-2.47.0-64-bit.exe" (
+        echo Download git 2.47 installer now.
+        ping -n 1 %git_web% >nul 2>&1
+        if %errorlevel%==0 (
+            echo Connet Github now...
+        ) else (
+            echo Connet Github fail...
+            echo Please connect to the Internet and click any button to continue.
+            goto install_git
+        )
+        curl -L -o %currentDir%/app/git-installer.exe "https://github.com/git-for-windows/git/releases/download/v2.47.0.windows.1/Git-2.47.0-64-bit.exe"
+        @REM curl -L -o %currentDir%/app/git-lfs.exe  "https://github.com/git-lfs/git-lfs/releases/download/v3.5.1/git-lfs-windows-v3.5.1.exe"
+    )
+    echo Install git 2.47
+    %currentDir%/app/git-installer.exe /SILENT
+    @REM %currentDir%/app/git-lfs.exe /SILENT
+    goto install_git
+)
+echo "GIT installed successfully!"
 
 @REM renew env variables
 @REM for /f "tokens=2,* delims= " %%a in ('reg query "HKCU\Environment" /v PATH 2^>nul') do set PATH=%%b

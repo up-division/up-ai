@@ -36,8 +36,8 @@ def main(args):
     video_h,video_w = (720,1280)
 
     monitor=Monitor(video_h,video_w)
-    monitor.start_cpu_monitor()
-    monitor.start_mem_monitor()
+    # monitor.start_cpu_monitor()
+    # monitor.start_mem_monitor()
 
     processing_times = collections.deque()
 

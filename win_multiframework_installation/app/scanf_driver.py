@@ -82,7 +82,7 @@ def scan_chip(book):
             w_instid='VEN_'+chip_type_info['ven_id']+'&DEV_'+sup_chipid
             # print(w_instid)
             if w_instid in lines:
-                print('Find '+chip_type_info['device_type'])
+                # print('Find '+chip_type_info['device_type'])
                 new_chip_type_info=dict(chip_type_info)
                 new_chip_type_info['sup_chip_ls']=sup_chipid
                 finded_chip_book.append(new_chip_type_info)
@@ -282,6 +282,7 @@ def scan_driver(book):
     # 调用 PowerShell catch output
     driver_book=[]
     print('Scan Driver Now!!!')
+    is_driver_install_successful=False
     for find_chip_type_info in book:
         # if find_chip_type_info['device_type']=='intel_gpu':
         if find_chip_type_info['sup_chip_ls']=='CPU':
@@ -294,14 +295,15 @@ def scan_driver(book):
         result = subprocess.run(["powershell", "-Command", find_driver_command], 
                                 capture_output=True, text=True).stdout.splitlines()
         if result[3].strip() :
-            print('Driver version: '+result[3])
-            print('The {device_type} Driver is ready!'.format(**find_chip_type_info))
+            # print('Driver version: '+result[3])
+            # print('The {device_type} Driver is ready!'.format(**find_chip_type_info))
             new_chip_type_info=dict(find_chip_type_info)
             new_chip_type_info.update({'driver': True})
             driver_book.append(new_chip_type_info)
+            is_driver_install_successful=True
             # return True
-        else:
-            print('{device_type} driver not find!'.format(**find_chip_type_info))
+        # else:
+        #     print('{device_type} driver not find!'.format(**find_chip_type_info))
             # return False
     # ====================================================
     # device_type|ven_id|sup_chip_ls           |driver
@@ -311,6 +313,8 @@ def scan_driver(book):
     # hailo      |8086  |['2864']              |True/False
     # nvidia_gpu |8086  |['24FA']              |True/False
     # =====================================================
+    if is_driver_install_successful:
+        print('Find device driver!')
     return driver_book
     
 def build_runspace(driver_installed_book,build_demo_type):
