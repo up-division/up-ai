@@ -1,29 +1,42 @@
 @echo off
+
+call %~dp0%\..\set_env.bat
+
+if  not defined root_dir (
+    echo  Please call set_env.bat to set the environment variables
+    pause
+    exit
+)
+
+if exist "%root_dir%\build\ov-chatbot" (
+    echo The Demo env already exists. Do you want to delete it?
+    choice /c yn /m "Please choose (y/n):"
+    if errorlevel 2 (
+        goto download
+    ) else (
+        rmdir /S /Q %root_dir%\build\ov-chatbot
+    )
+)
+
 echo =====================================
 echo   Install openvino chatbot packages
 echo =====================================
-py -3.10 -m venv %currentDir%/env/ov-chatbot
-call %currentDir%/env/ov-chatbot/Scripts/activate.bat
+
+py -3.10 -m venv %root_dir%/build/ov-chatbot
+call %root_dir%/build/ov-chatbot/Scripts/activate.bat
+
 @REM pip install onnx==1.16.1
-pip install -r %currentDir%\..\chatbot\requirements.txt
+pip install -r %root_dir%\chatbot\requirements.txt
+
 echo ===========================================
 echo Chatbot Environment Installation Completed!
 echo ===========================================
-echo "Check Chatbot Model!"
-set FILE_URL=https://aaeon365-my.sharepoint.com/:u:/g/personal/dannyzhang_aaeon_com_tw/Ee8WFbG9QvRPmIUYY859Gr4B3CXQhMlG2_m0ROpBYVXfsg?download=1
-set "model_path=%currentDir%\..\chatbot\tiny-llama-1b-chat\INT4_compressed_weights\openvino_model.bin"
-@REM get model size(local)
-for %%A in ("%model_path%") do set FILE_SIZE=%%~zA
-@REM SIZE_LIMIT=10MB
-set /a SIZE_LIMIT=10485760
-echo Chatbot Model Size:%FILE_SIZE%
-if %FILE_SIZE% LSS %SIZE_LIMIT% (
-    del %model_path%
-)
-if exist %model_path% (
-    echo Chatbot model exist.
-) else (
-    echo Download Chatbot Model now!
-    powershell -command "wget %FILE_URL% -o %model_path%"
-    echo Download done!
-)
+call %root_dir%/build/ov-chatbot/Scripts/deactivate.bat
+
+
+:download
+echo "Download Chatbot Model!"
+%download_file% -url "https://aaeon365-my.sharepoint.com/:u:/g/personal/junyinglai_aaeon_com_tw/ERzwCuBCBbZNh0-08aTXsj4BpZyy0o0X2NoZBUbrxGtbCQ?e=8ANs3B" -o %root_dir%\chatbot\tiny-llama-1b-chat\
+
+pause
+exit

@@ -1,0 +1,60 @@
+[
+  {
+    "driver_location": "https://downloadmirror.intel.com/838895/npudriver-32.0.100.3104.zip",
+    "driver_name": "npu.inf",
+    "vid_pid": [
+      {
+        "vid": "ven_8086",
+        "pid": "dev_7D1D"
+      }
+    ]
+  },
+  {
+    "driver_location": ".\\drivers\\",
+    "driver_name": "hailort_4.19.0_windows_installer.msi",
+    "vid_pid": [
+      {
+        "vid": "ven_1E60",
+        "pid": "dev_2864"
+      }
+    ]
+  },
+  {
+    "driver_location": "https://tw.download.nvidia.com/Windows/Quadro_Certified/553.50/553.50-quadro-rtx-desktop-notebook-win10-win11-64bit-international-dch-whql.exe",
+    "driver_name": "553.50-quadro-rtx-desktop-notebook-win10-win11-64bit-international-dch-whql.exe",
+    "vid_pid": [
+      {
+        "vid": "ven_10de",
+        "pid": "dev_24fa"
+      }
+    ]
+  },
+  {
+    "driver_location": "https://developer.download.nvidia.com/compute/cuda/12.4.0/local_installers/cuda_12.4.0_551.61_windows.exe",
+    "driver_name": "cuda_12.4.0_551.61_windows.exe",
+    "vid_pid": [
+      {
+        "vid": "ven_10de",
+        "pid": "dev_24fa"
+      }
+    ]
+  },
+  {
+    "driver_location": "https://downloadmirror.intel.com/843834/gfx_win_101.6332_101.6253.exe",
+    "driver_name": "gfx_win_101.6332_101.6253.exe",
+    "vid_pid": [
+      {
+        "vid": "ven_8086",
+        "pid": "dev_7D55"
+      },
+      {
+        "vid": "ven_8086",
+        "pid": "dev_46D1"
+      },
+      {
+        "vid": "ven_8086",
+        "pid": "dev_A780"
+      }
+    ]
+  }
+]

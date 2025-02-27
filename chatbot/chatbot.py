@@ -1,3 +1,4 @@
+import os
 import torch
 import sys
 from threading import Event, Thread
@@ -472,9 +473,17 @@ def main(argv):
     # it creates a publicly shareable link for the interface. Read more in the docs: https://gradio.app/docs/
     t=Thread(target=open_web)
     t.start()
+    
     demo.launch(server_name="127.0.0.1",server_port=7860)
 
 
 
+
 if __name__ == "__main__":
+    original_cwd = os.getcwd()
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
+    
     main(sys.argv)
+    
+    os.chdir(original_cwd)

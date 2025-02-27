@@ -967,7 +967,7 @@ def run_object_detection(
 
 
 def main(argv):
-    
+
     model_file=Path("model")/ "yolo11n.xml"
     
     quantized_model = core.read_model(model_file)
@@ -1016,6 +1016,12 @@ def main(argv):
         device=device_dict[str(sel_dev)],
         )
 
-
 if __name__ == "__main__":
+    original_cwd = os.getcwd()
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
+    
     main(sys.argv)
+    
+    os.chdir(original_cwd)
+
