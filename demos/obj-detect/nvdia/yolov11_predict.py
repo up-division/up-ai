@@ -3,7 +3,7 @@ import argparse
 import cv2
 import os
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../common')))
 from monitor import Monitor
 # from win_multiframework_installation.app.monitor import Monitor
 import time

@@ -6,6 +6,8 @@ import patoolib
 import sys
 import ctypes
 import re
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..', 'common'))
+
 from board_check import scan_boardid
 
 def is_admin():

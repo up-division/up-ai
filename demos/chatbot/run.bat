@@ -1,5 +1,6 @@
 @echo off
-call %~dp0%\..\env_list\set_env.bat
+set current_dir=%~dp0%
+call %current_dir%\..\..\inst\win\set_env.bat
 
 if  not defined root_dir (
 	echo  Please call set_env.bat to set the environment variables
@@ -94,7 +95,7 @@ if "%demotype%"=="Intel" (
 	)
 	echo Start Chatbot......
 	@REM in run space, use 'python' comand
-	python %root_dir%\chatbot\chatbot.py
+	python %current_dir%\chatbot.py
 ) else if "%hardware%"=="0" (
 	exit
 ) else (

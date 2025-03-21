@@ -1,12 +1,21 @@
 ﻿import os
-from pickle import TRUE
 import subprocess
+from common import clear_screen,pause
 
 
-def clear_screen():
-    os.system('cls')
+
     
-apps = [{"app":"Object Detection - video","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)), 'run', 'obj.bat'),'1']},
+# apps = [{"app":"Object Detection - video","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)), 'run', 'obj.bat'),'1']},
+#         {"app":"Object Detection - camera","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)),'run', 'obj.bat'),'2']},
+#         {"app":"Chatbot","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)), 'run', 'chatbot.bat')]}
+#         ]  
+
+apps_win = [{"app":"Object Detection - video","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', '..', 'demos','obj-detect', 'run.bat'),'1']},
+        {"app":"Object Detection - camera","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', '..', 'demos','obj-detect', 'run.bat'),'2']},
+        {"app":"Chatbot","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', '..', 'demos','chatbot', 'run.bat')]}
+        ]  
+
+apps_linux = [{"app":"Object Detection - video","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)), 'run', 'obj.bat'),'1']},
         {"app":"Object Detection - camera","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)),'run', 'obj.bat'),'2']},
         {"app":"Chatbot","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)), 'run', 'chatbot.bat')]}
         ]  
@@ -20,10 +29,10 @@ def select_app(choices):
                 subprocess.run(apps[choice-1]['cmd'], shell=True)
             else:
                 print("\033[91mError: {}\033[0m".format("Invalid input"))
-            os.system('pause')
+            pause()
     except ValueError:
         print("\033[91mError: {}\033[0m".format("Invalid input"))
-        os.system('pause')
+        pause()
             
 
 def display_menu():
@@ -35,7 +44,7 @@ def display_menu():
 
 def main():
     
-    while TRUE: 
+    while True: 
         display_menu()
         try:
             choices = [int(choice) for choice in input("Please input number: ").split(',') if choice.isdigit()]    
@@ -46,10 +55,18 @@ def main():
                 return
         except ValueError as e:
             print("\033[91mError: {}\033[0m".format(e))
-            os.system('pause')
+            pause()
             continue
 
         select_app(choices)
 
 if __name__ == "__main__":
+    global apps
+    if os.name == 'nt': 
+        apps=apps_win
+    else:
+        apps=apps_linux
+        
+
+
     main()

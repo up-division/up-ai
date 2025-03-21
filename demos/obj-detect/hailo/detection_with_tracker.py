@@ -16,7 +16,7 @@ import time
 
 #sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import HailoAsyncInference
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../common')))
 #from win_multiframework_installation.app.monitor import Monitor
 from monitor import Monitor
 

@@ -18,7 +18,7 @@ echo Executed as administrator!
 
 :Start
 
-call %~dp0%\env_list\set_env.bat
+call %~dp0%\inst\win\set_env.bat
 
 :: =====================Check vc_redist.x64.exe===========
 echo [Step 1 / %total_step%]
@@ -74,14 +74,15 @@ if %errorlevel% equ 0 (
 
 :: ======================Install Driver===================
 echo [Step 4 / %total_step%]
-
+call %chk_net%
 %install_driver%
 
-:: ======================build environment===================
 
+:: ======================build environment===================
 echo [Step 5 / %total_step%]
+call %chk_net%
 %build_env%
-cls
+
 
 :install_ok_msg
 echo      *** Installation complete! ***

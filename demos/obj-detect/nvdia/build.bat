@@ -1,5 +1,6 @@
 @echo off
-call %~dp0%\..\set_env.bat
+set current_dir=%~dp0%
+call %current_dir%\..\..\..\inst\win\set_env.bat
 
 if  not defined root_dir (
     echo  Please call set_env.bat to set the environment variables
@@ -25,7 +26,7 @@ for %%d in (%devices%) do (
 )
 
 endlocal
-pause
+
 exit
 
 
@@ -59,6 +60,10 @@ echo Yolov11 Environment Installation Completed!
 echo ===========================================
 
 echo "Check demo video now!"
+if not exist "%root_dir%\videos\" (
+    mkdir %root_dir%\videos\
+)
+
 if exist "%root_dir%\videos\obj_video.mp4" (
     echo nvdia demo video exist.
 ) else (

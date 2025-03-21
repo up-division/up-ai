@@ -1,16 +1,14 @@
 @echo off
-call %~dp0%\..\set_env.bat
+
+set current_dir=%~dp0%
+call %current_dir%\..\..\..\inst\win\set_env.bat
+
 if  not defined root_dir (
     echo  Please call set_env.bat to set the environment variables
     pause
     exit
 )
-
-
-
 setlocal enabledelayedexpansion
-
-
 ::Setting Multiple Devices' VID and PID
 set "devices=1E60:2864"
 
@@ -28,7 +26,7 @@ for %%d in (%devices%) do (
 )
 
 endlocal
-pause
+
 exit
 
 :start
@@ -50,14 +48,21 @@ call %root_dir%/build/hailo-obj_det/Scripts/activate.bat
 
 pip install wheel
 pip install psutil
-pip install %root_dir%\win_multiframework_installation\app\hailo\py_pkg\netifaces-0.11.0-cp310-cp310-win_amd64.whl
+pip install %current_dir%\py_pkg\netifaces-0.11.0-cp310-cp310-win_amd64.whl
 pip install "%ProgramFiles%\HailoRT\python\hailort-4.19.0-cp310-cp310-win_amd64.whl"
-pip install -r %root_dir%\win_multiframework_installation\app\hailo\detection_with_tracker\requirements.txt
+pip install -r %current_dir%\requirements.txt
 echo ========================================================
 echo Hailo objecet detect Environment Installation Completed!
 echo ========================================================
 
 echo "Check Hailo detect data now!"
+if not exist "%root_dir%\videos\" (
+    mkdir %root_dir%\videos\
+)
+if not exist "%root_dir%\models\" (
+    mkdir %root_dir%\models\
+)
+
 if exist "%root_dir%\videos\hailo_video.mp4" (
     echo Hailo demo video exist.
 ) else (

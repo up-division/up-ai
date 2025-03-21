@@ -1,7 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
+set current_dir=%~dp0%
+call %current_dir%\..\..\inst\win\set_env.bat
 
-call %~dp0\..\env_list\set_env.bat
 if not defined root_dir (
     echo Please call set_env.bat to set the environment variables
     pause
@@ -83,7 +84,7 @@ if "!demotype!"=="Intel" (
         goto obj_detect
     )
     echo Start Object Detect......
-    python %root_dir%/obj-detect/demo.py %root_dir%\videos\obj_video.mp4
+    python %current_dir%\intel\demo.py %root_dir%\videos\obj_video.mp4
 ) else if "!demotype!"=="Hailo" (
     if exist "%root_dir%/build/hailo-obj_det/Scripts/activate.bat" (
         call %root_dir%/build/hailo-obj_det/Scripts/activate.bat
@@ -93,7 +94,7 @@ if "!demotype!"=="Intel" (
         goto obj_detect
     )
     echo Start detection with tracker...
-    python %root_dir%\win_multiframework_installation\app\hailo\detection_with_tracker\detection_with_tracker.py -n %root_dir%\models\yolov5m_wo_spp_60p.hef -i %root_dir%\videos\hailo_video.mp4 -l %root_dir%\win_multiframework_installation\app\hailo\detection_with_tracker\coco.txt
+    python %current_dir%\hailo\detection_with_tracker.py -n %root_dir%\models\yolov5m_wo_spp_60p.hef -i %root_dir%\videos\hailo_video.mp4 -l %current_dir%\hailo\coco.txt
 ) else if "!demotype!"=="Nvidia" (
     if exist "%root_dir%/build/torch_yolov11/Scripts/activate.bat" (
         call %root_dir%/build/torch_yolov11/Scripts/activate.bat
@@ -103,7 +104,7 @@ if "!demotype!"=="Intel" (
         goto obj_detect
     )
     echo Start Yolov11 by pytorch!
-    python %root_dir%\win_multiframework_installation\app\pytorch\yolov11_predict.py %root_dir%\videos\obj_video.mp4
+    python %current_dir%\nvdia\yolov11_predict.py %root_dir%\videos\obj_video.mp4
 ) else (
     echo Unknown option, please rechoose!
     pause
@@ -160,7 +161,7 @@ if "!demotype!"=="Intel" (
         goto obj_detect1
     )
     echo Start Object Detect......
-    python %root_dir%/obj-detect/demo.py 0
+    python %current_dir%/intel/demo.py 0
 ) else if "!demotype!"=="Hailo" (
     if exist "%root_dir%/build/hailo-obj_det/Scripts/activate.bat" (
         call %root_dir%/build/hailo-obj_det/Scripts/activate.bat
@@ -170,7 +171,7 @@ if "!demotype!"=="Intel" (
         goto obj_detect1
     )
     echo Start detection with tracker...
-    python %root_dir%\win_multiframework_installation\app\hailo\detection_with_tracker\detection_with_tracker.py -n %root_dir%\models\yolov5m_wo_spp_60p.hef -l %root_dir%\win_multiframework_installation\app\hailo\detection_with_tracker\coco.txt
+    python %current_dir%\hailo\detection_with_tracker.py -n %root_dir%\models\yolov5m_wo_spp_60p.hef -l %current_dir%\hailo\coco.txt
 ) else if "!demotype!"=="Nvidia" (
     if exist "%root_dir%/build/torch_yolov11/Scripts/activate.bat" (
         call %root_dir%/build/torch_yolov11/Scripts/activate.bat
@@ -180,7 +181,7 @@ if "!demotype!"=="Intel" (
         goto obj_detect1
     )
     echo Start Yolov11 by pytorch!
-    python %root_dir%\win_multiframework_installation\app\pytorch\yolov11_predict.py 0
+    python  %current_dir%\nvdia\yolov11_predict.py 0
 ) else (
     echo Unknown option, please rechoose!
     pause

@@ -1,10 +1,10 @@
 ﻿import argparse
-from asyncio.windows_events import NULL
 import requests
 import re
 import os
 import patoolib
 from board_check import scan_boardid
+
 def get_filename_from_cd(cd):
     """
     Get file name from content-disposition

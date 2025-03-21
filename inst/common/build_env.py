@@ -3,8 +3,7 @@ import sys
 import subprocess
 from board_check import scan_boardid
 
-def clear_screen():
-    os.system('cls')
+from common import clear_screen,pause
     
 main_menu=["Install Environment and Inefrence Data",
            "Auto install all",
@@ -14,9 +13,18 @@ main_menu=["Install Environment and Inefrence Data",
 #               {"name":"Chatbot","cmd": "python "+os.path.dirname(os.path.realpath(__file__))+"\scanf_driver.py -env -at 2"}
 #            ]
 
-install_menu=[{"name":"Object Detection","cmd": ['start',os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'env_list', 'py310', 'ov-obj-all.bat')]},
+# install_menu=[{"name":"Object Detection","cmd": ['start',os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'env_list', 'py310', 'ov-obj-all.bat')]},
+#               {"name":"Chatbot","cmd": ['start',os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'env_list', 'py310', 'ov-chatbot.bat')]}
+#            ]
+
+install_menu_win=[{"name":"Object Detection","cmd": ['start',os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'demos','obj-detect', 'build.bat')]},
+              {"name":"Chatbot","cmd": ['start',os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'demos','chatbot', 'build.bat')]}
+           ]
+
+install_menu_linux=[{"name":"Object Detection","cmd": ['start',os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'env_list', 'py310', 'ov-obj-all.bat')]},
               {"name":"Chatbot","cmd": ['start',os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'env_list', 'py310', 'ov-chatbot.bat')]}
            ]
+
 
 def install_one():
     while True:
@@ -31,21 +39,22 @@ def install_one():
                 raise ValueError("Invalid input")
         except ValueError as e:
             print("\033[91mError: {}\033[0m".format(e))
-            os.system('pause')
+            pause()
             continue    
         
         try:
             for choice in choices:
                 if(choice==0):
+                    print("\033[91m{}\033[0m".format("Exit.........."))
                     return
                 elif(((choice-1)<len(install_menu)) and (choice>0) ):
                     subprocess.run(install_menu[choice-1]['cmd'], shell=True)
                 else:
                     print("\033[91mError: {}\033[0m".format("Invalid input"))
-            os.system('pause')
+            pause()
         except ValueError:
             print("\033[91mError: {}\033[0m".format("Invalid input"))
-            os.system('pause')
+            pause()
             
 # def install_one():
 #     while True:
@@ -123,4 +132,10 @@ def main():
     
     
 if __name__ == "__main__":
+    global install_menu
+    if os.name == 'nt': 
+        install_menu=install_menu_win
+    else:
+        install_menu=install_menu_linux
+        
     main()
