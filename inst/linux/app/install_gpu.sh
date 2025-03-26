@@ -5,10 +5,10 @@ ori_dir=$(pwd)
 # Install GPU driver
 echo "Install gpu driver......"
 
-if [ ! -d "$PWD/app/driver/cuda" ]; then
-	mkdir -p $PWD/app/driver/cuda
+if [ ! -d "$PWD/inst/linux/app/driver/cuda" ]; then
+	mkdir -p $PWD/inst/linux/app/driver/cuda
 fi
-cd $ori_dir/app/driver/cuda
+cd $ori_dir/inst/linux/app/driver/cuda
 
 if [ ! -f "intel-level-zero-npu_1.10.0.20241107-11729849322_ubuntu22.04_amd64.deb" ]; then
 	wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb

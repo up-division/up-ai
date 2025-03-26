@@ -22,8 +22,8 @@ main_menu() {
         2) objc_menu ;;
         3) chatbot_menu ;;
         *) 
-            echo "Unknown option, please rechoose!"
-            read -p "Press any key to continue..."  # Wait for user to continue
+            echo "Unknown option, please choose again!"
+            read -n 1 -s -p "Press any key to continue..."  # Wait for user to continue
             clear
             main_menu
             ;;
@@ -67,7 +67,7 @@ objv_menu() {
         read -p "Please input : " dev_option
     else
         echo No Compatible Hardware Detected!
-        read -p "Press any key to return to main menu......"
+        read -n 1 -s -p "Press any key to return to main menu......"
         main_menu
     fi
 
@@ -75,15 +75,15 @@ objv_menu() {
         0) 
             main_menu;;
         $intel_opt) 
-            if [ -f "$PWD/env/obj_ov/bin/activate" ];then
-                source env/obj_ov/bin/activate
+            if [ -f "$PWD/inst/linux/env/obj_ov/bin/activate" ];then
+                source inst/linux/env/obj_ov/bin/activate
                 echo Start Object Detect......
-                cd ../obj-detect
+                cd demos/obj-detect/intel
                 python3 demo.py
                 cd $ori_dir
             else
-                echo This demo environment not install! Please rechoose!
-                read -p "Press any key to continue..."
+                echo This demo environment not install! Please choose again!
+                read -n 1 -s -p "Press any key to continue..."
                 clear
                 objv_menu
             fi
@@ -95,29 +95,29 @@ objv_menu() {
                 cd $HOME/tappas
                 ./apps/h8/gstreamer/general/multistream_detection/multi_stream_detection.sh --show-fps
             else
-                echo This demo environment not install! Please rechoose!
-                read -p "Press any key to continue..."
+                echo This demo environment not install! Please choose again!
+                read -n 1 -s -p "Press any key to continue..."
                 clear
                 objv_menu
             fi
             ;;
         $nvidia_opt)
-            if [ -f "$PWD/env/obj_cuda/bin/activate" ];then
-                source env/obj_cuda/bin/activate
+            if [ -f "$PWD/inst/linux/env/obj_cuda/bin/activate" ];then
+                source inst/linux/env/obj_cuda/bin/activate
                 echo Start Object Detect......
-                python3 $PWD/app/pytorch/yolov11_predict.py ../videos/obj_video.mp4
+                python3 $PWD/inst/linux/app/pytorch/yolov11_predict.py ../videos/obj_video.mp4
                 cd $ori_dir
             else
-                echo This demo environment not install! Please rechoose!
-                read -p "Press any key to continue..."
+                echo This demo environment not install! Please choose again!
+                read -n 1 -s -p "Press any key to continue..."
                 clear
                 objv_menu
             fi
             #main_menu
             ;;
         *)
-            echo "Unknown option, please rechoose!"
-            read -p "Press any key to continue..."
+            echo "Unknown option, please choose again!"
+            read -n 1 -s -p "Press any key to continue..."
             clear
             objv_menu
             ;;
@@ -156,7 +156,7 @@ objc_menu() {
         read -p "Please input : " dev_option
     else
         echo No Compatible Hardware Detected!
-        read -p "Press any key to return to main menu......"
+        read -n 1 -s -p "Press any key to return to main menu......"
         main_menu
     fi
 
@@ -164,36 +164,36 @@ objc_menu() {
         0) 
             main_menu;;
         $intel_opt) 
-            if [ -f "$PWD/env/obj_ov/bin/activate" ];then
-                source env/obj_ov/bin/activate
+            if [ -f "$PWD/inst/linux/env/obj_ov/bin/activate" ];then
+                source inst/linux/env/obj_ov/bin/activate
                 echo Start Object Detect......
-                cd ../obj-detect
+                cd demos/obj-detect/intel
                 python3 demo.py 0
                 cd $ori_dir
             else
-                echo This demo environment not install! Please rechoose!
-                read -p "Press any key to continue..."
+                echo This demo environment not install! Please choose again!
+                read -n 1 -s -p "Press any key to continue..."
                 clear
                 objc_menu
             fi
             ;;
         $nvidia_opt)
-            if [ -f "$PWD/env/obj_cuda/bin/activate" ];then
-                source env/obj_cuda/bin/activate
+            if [ -f "$PWDcenv/obj_cuda/bin/activate" ];then
+                source inst/linux/env/obj_cuda/bin/activate
                 echo Start Object Detect......
-                python3 $PWD/app/pytorch/yolov11_predict.py 0
+                python3 $PWD/inst/linux/app/pytorch/yolov11_predict.py 0
                 cd $ori_dir
             else
-                echo This demo environment not install! Please rechoose!
-                read -p "Press any key to continue..."
+                echo This demo environment not install! Please choose again!
+                read -n 1 -s -p "Press any key to continue..."
                 clear
                 objc_menu
             fi
             main_menu
             ;;
         *)
-            echo "Unknown option, please rechoose!"
-            read -p "Press any key to continue..."
+            echo "Unknown option, please choose again!"
+            read -n 1 -s -p "Press any key to continue..."
             clear
             objc_menu
             ;;
@@ -225,7 +225,7 @@ chatbot_menu() {
         read -p "Please input : " dev_option
     else
         echo No Compatible Hardware Detected!
-        read -p "Press any key to return to main menu......"
+        read -n 1 -s -p "Press any key to return to main menu......"
         main_menu
     fi
 
@@ -233,23 +233,23 @@ chatbot_menu() {
         0) 
             main_menu;;
         $intel_opt) 
-            if [ -f "$PWD/env/chatbot/bin/activate" ]; then
-                source env/chatbot/bin/activate
+            if [ -f "$PWD/inst/linux/env/chatbot/bin/activate" ]; then
+                source inst/linux/env/chatbot/bin/activate
                 echo Start Chatbot......
-                cd ../chatbot
+                cd demos/chatbot
                 python3 chatbot.py
                 cd $ori_dir
                 chatbot_menu
             else
-                echo This demo environment not install! Please rechoose!
-                read -p "Press any key to continue..."
+                echo This demo environment not install! Please choose again!
+                read -n 1 -s -p "Press any key to continue..."
                 clear
                 chatbot_menu
             fi
             ;;
         *)
-            echo "Unknown option, please rechoose!"
-            read -p "Press any key to continue..."
+            echo "Unknown option, please choose again!"
+            read -n 1 -s -p "Press any key to continue..."
             clear
             objc_menu
             ;;

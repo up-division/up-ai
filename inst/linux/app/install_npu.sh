@@ -7,10 +7,10 @@ echo "Install npu driver......"
 USER_NAME=$(whoami)
 sudo dpkg --purge --force-remove-reinstreq intel-driver-compiler-npu intel-fw-npu intel-level-zero-npu
 
-if [ ! -d "$ori_dir/app/driver/npu" ]; then
-	mkdir -p $ori_dir/app/driver/npu
+if [ ! -d "$ori_dir/inst/linux/app/driver/npu" ]; then
+	mkdir -p $ori_dir/inst/linux/app/driver/npu
 fi
-cd $ori_dir/app/driver/npu
+cd $ori_dir/inst/linux/app/driver/npu
 
 if [ ! -f "intel-driver-compiler-npu_1.10.0.20241107-11729849322_ubuntu22.04_amd64.deb" ]; then
 	wget https://github.com/intel/linux-npu-driver/releases/download/v1.10.0/intel-driver-compiler-npu_1.10.0.20241107-11729849322_ubuntu22.04_amd64.deb

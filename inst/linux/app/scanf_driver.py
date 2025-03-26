@@ -101,7 +101,7 @@ def install_driver(book):
                 print(e)
 
 def build_runspace(book,build_demo_type):
-    env_dir=os.path.join(os.getcwd(),'env_list')
+    env_dir=os.path.join(os.getcwd(),'inst', 'linux', 'env_list')
     device_dict=scanf_chip(book)
     framework_env={}
     obj_dect_env={'Intel':'ov-obj_det.sh','hailo':'hailo-obj_det.sh','nvidia_gpu':'pytorch-obj_det.sh'}
