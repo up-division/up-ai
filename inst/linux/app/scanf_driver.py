@@ -67,7 +67,7 @@ def scanf_chip(book):
     return finded_chip_book
     
 def install_driver(book):
-    driver_installation_dir=os.path.join(os.getcwd(),'app')
+    driver_installation_dir=os.path.join(os.getcwd(),'inst', 'linux', 'app')
     
     for find_chip_type_info in book:
         if find_chip_type_info['device_type']=='intel_gpu':
