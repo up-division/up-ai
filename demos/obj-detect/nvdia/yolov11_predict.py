@@ -52,7 +52,7 @@ def main(args):
         start_time = time.time()
 
         # 進行推論
-        results = model(frame_resized)
+        results = model(frame_resized,device=0)
         stop_time = time.time()
         annotated_frame = results[0].plot()
 

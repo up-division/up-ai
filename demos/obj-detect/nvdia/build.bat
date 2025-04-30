@@ -52,6 +52,7 @@ call %root_dir%/build/torch_yolov11/Scripts/activate.bat
 pip install ultralytics
 pip install argparse
 pip install psutil
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 
 @REM git clone https://github.com/ultralytics/ultralytics.git 
 
