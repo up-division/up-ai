@@ -20,6 +20,8 @@ echo Executed as administrator!
 
 call %~dp0%\inst\win\set_env.bat
 
+if %winpkg% equ 0 (
+
 :: =====================Check vc_redist.x64.exe===========
 echo [Step 1 / %total_step%]
 cmd /c "exit /b 0"
@@ -71,6 +73,15 @@ if %errorlevel% equ 0 (
 
 )
 
+) else (
+    echo [Step 1 / %total_step%]
+    winget %vs_installer%
+    echo [Step 2 / %total_step%]
+    winget %py_installer%
+    echo [Step 3 / %total_step%]
+    winget %git_installer%
+
+)
 
 :: ======================Install Driver===================
 echo [Step 4 / %total_step%]
