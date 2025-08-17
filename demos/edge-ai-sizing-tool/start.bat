@@ -14,6 +14,8 @@ REM Run the demo script using npm
 npm run demo && (
     echo 'npm run demo' executed successfully.
     echo Edge AI Sizing Tool started successfully.
+    start http://localhost:8080
+
 ) || (
     echo Failed to run 'npm run demo'. Please ensure npm is installed and configured correctly.
     echo Press any key to exit...

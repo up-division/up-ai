@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 import { promisify } from 'util'
 import { ChildProcessWithoutNullStreams, spawn, exec } from 'child_process'
 import si from 'systeminformation'
-import os from 'os'
+//import os from 'os'
 
 //const isWindows = os.platform() === 'win32'
 const isWindows = navigator.platform === 'Win32'

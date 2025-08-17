@@ -7,7 +7,7 @@ import { Workload } from '@/payload-types'
 import { CollectionAfterDeleteHook } from 'payload'
 import fs from 'fs'
 import path from 'path'
-import os from 'os'
+//import os from 'os'
 
 // Determine the platform
 //const isWindows = os.platform() === 'win32'

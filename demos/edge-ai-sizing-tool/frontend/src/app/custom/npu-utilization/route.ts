@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 import { addon as ov } from 'openvino-node'
 import { NOT_AVAILABLE } from '@/lib/constants'
 import { spawn } from 'child_process'
-import os from 'os'
+//import os from 'os'
 
 //const isWindows = os.platform() === 'win32'
 const isWindows = navigator.platform === 'Win32'

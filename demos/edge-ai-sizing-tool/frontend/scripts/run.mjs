@@ -11,7 +11,7 @@ const isWindows = os.platform() === 'win32'
 
 const getNpmPathWindows = () => {
     try {
-    return 'npm.cmd'
+    //return 'npm.cmd'
     return execSync('where npm.cmd', { 
       encoding: 'utf8',
       shell: true 
@@ -23,7 +23,7 @@ const getNpmPathWindows = () => {
 
 const getPm2PathWindows = () => {
     try {
-    return 'pm2.cmd'
+    //return 'pm2.cmd'
     return execSync('where pm2.cmd', { 
       encoding: 'utf8',
       shell: true 
@@ -71,7 +71,8 @@ const runCommand = (command) => {
     try {
       const [cmdName, ...rawArgs] = command.split(' ')
       if (isWindows && rawArgs[1] === 'npm') {
-        rawArgs[1] = "%NPM_CLI_JS%"
+          rawArgs[1] = "%NPM_CLI_JS%"
+          //rawArgs[1] = "C:/NodeJS/node_modules/npm/bin/npm-cli.js"
       }
 
       if (!Object.keys(ALLOWED_COMMANDS).includes(cmdName)) {
@@ -206,27 +207,13 @@ const runInstallBuildStart = async () => {
       const eastAppExists = await checkPm2App()
       console.log(eastAppExists.toString())
     if (eastAppExists) {
-      console.log('EAST application found in PM2, resurrecting...')
-        if (isWindows) {
-            await runCommand('pm2 resurrect')
-            await runCommand('pm2 start all')
-        } else {
-            await runCommand('pm2 resurrect')
-            await runCommand('pm2 start all')
-        }
+        console.log('EAST application found in PM2, resurrecting...')
+        await runCommand('pm2 resurrect')
+        await runCommand('pm2 start all')
 
     } else {
         console.log('Starting EAST application with PM2...')
-
-        if (isWindows) {
-            //await runCommand('pm2 start "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js" --name "EAST" -- run start')
-            //await runCommand('pm2 start "%ProgramW6432%/nodejs/node_modules/npm/bin/npm-cli.js" --name "EAST" -- run start')
-            await runCommand('pm2 start "%ProgramW6432%/nodejs/node_modules/npm/bin/npm-cli.js" --name "EAST" -- start')
-
-
-        } else {
-            await runCommand('pm2 start npm --name "EAST" -- start')
-        }
+        await runCommand('pm2 start npm --name "EAST" -- start')
     }
   } catch (error) {
     console.error('An error occurred:', error)
