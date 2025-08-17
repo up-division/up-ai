@@ -1,0 +1,263 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+from typing import Dict
+from PIL import Image
+import argparse
+import io
+import openvino_genai
+import os
+import time
+import uvicorn
+import sys
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+import base64
+import subprocess
+import platform
+import logging
+from fastapi.middleware.cors import CORSMiddleware
+import requests
+import urllib.parse
+import zipfile
+from huggingface_hub import whoami
+
+
+# from optimum.intel import OVModelForCausalLM, OVWeightQuantizationConfig
+# from transformers import AutoTokenizer
+# from openvino_tokenizers import convert_tokenizer
+# from pathlib import Path
+# from openvino import save_model
+# from openvino import compile_model
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
+hf_token = os.getenv("HF_TOKEN")
+if hf_token:
+    user = whoami(token=hf_token)
+
+env = os.environ.copy()
+venv_path = os.path.dirname(sys.executable)
+if platform.system() == "Windows":
+    env["PATH"] = f"{venv_path};{env['PATH']}"
+else:
+    env["PATH"] = f"{venv_path}:{env['PATH']}"
+
+
+def optimum_cli(model_id, output_dir, additional_args: Dict[str, str] = None):
+    export_command = f"optimum-cli export openvino --model {model_id} {output_dir}"
+    if additional_args is not None:
+        for arg, value in additional_args.items():
+            export_command += f" --{arg}"
+            if value:
+                export_command += f" {value}"
+    try:
+        subprocess.run(
+            export_command.split(" "),
+            shell=(platform.system() == "Windows"),
+            check=True,
+            capture_output=True,
+            env=env,
+        )
+    except Exception as e:
+        logging.error(f"optimum-cli failed: {e}")
+        update_payload_status(args.id, status="failed")
+        sys.exit(1)
+
+
+# def optimum_cli(model_id, output_dir, additional_args: Dict[str, str] = None):
+   
+#     hf_tokenizer = AutoTokenizer.from_pretrained(model_id)
+#     ov_tokenizer, ov_detokenizer = convert_tokenizer(hf_tokenizer, with_detokenizer=True)
+    
+
+#     model = OVModelForCausalLM.from_pretrained(
+#     model_id,
+#     export=True,
+#     )
+#     model.save_pretrained(output_dir)
+#     save_model(ov_tokenizer, output_dir+ "\openvino_tokenizer.xml")
+#     save_model(ov_detokenizer,output_dir+ "\openvino_detokenizer.xml")
+#     tokenizer, detokenizer = compile_model(ov_tokenizer), compile_model(ov_detokenizer)
+
+
+
+
+def update_payload_status(workload_id: int, status):
+    """
+    Update the workload status in a safe way, allow-listing scheme, authority,
+    and preventing unsafe path traversal.
+    """
+    if not isinstance(workload_id, int) and workload_id >= 0:
+        logging.error(f"Invalid workload ID: {workload_id}. Refusing to update status.")
+        return
+
+    # Hardcode scheme & authority (safe allow-list)
+    allowed_scheme = "http"
+    allowed_netloc = "127.0.0.1:8080"
+
+    # Build the path carefully. Reject characters such as '../'
+    # in a real system, you might strictly allow digits only
+    path = f"/api/workloads/{workload_id}"
+
+    # Use urllib.parse to verify
+    composed_url = f"{allowed_scheme}://{allowed_netloc}{path}"
+    parsed_url = urllib.parse.urlparse(composed_url)
+
+    # Enforce scheme & authority are what we expect
+    if parsed_url.scheme != allowed_scheme or parsed_url.netloc != allowed_netloc:
+        logging.error(f"URL scheme or authority not allowed: {parsed_url.geturl()}")
+        return
+
+    # Basic check for path traversal attempts (../, //, whitespace, etc.)
+    if ".." in path or "//" in path or " " in path:
+        logging.error(f"Invalid characters in URL path: {path}")
+        return
+
+    # Now safe to use
+    url = parsed_url.geturl()
+
+    data = {"status": status, "port": args.port}
+    try:
+        response = requests.patch(url, json=data)
+        response.raise_for_status()
+        logging.info(f"Successfully updated status to {status} for {workload_id}.")
+    except requests.exceptions.RequestException as e:
+        logging.info(f"Failed to update status: {e}")
+
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Argument parser for command-line arguments
+parser = argparse.ArgumentParser(
+    description="FastAPI server for OpenVINO text-to-image model"
+)
+parser.add_argument(
+    "--model-name",
+    type=str,
+    required=True,
+    help="Name of the OpenVINO model (.xml file)",
+)
+parser.add_argument(
+    "--device",
+    type=str,
+    default="CPU",
+    help="Device to run the model on (e.g., CPU, GPU, MYRIAD)",
+)
+parser.add_argument(
+    "--port", type=int, default=5997, help="Port to run the FastAPI server on"
+)
+parser.add_argument(
+    "--id", type=int, default=1, help="Workload ID to update the workload status"
+)
+
+args = parser.parse_args()
+
+# Prepare model path and extraction if needed
+models_dir = "models"
+custom_models_dir = "../custom_models/text-to-image"
+os.makedirs(models_dir, exist_ok=True)
+
+# handle custom model in zip format
+if args.model_name.endswith(".zip"):
+    model_zipfile_name = os.path.splitext(os.path.basename(args.model_name))[0]
+    model = os.path.join(models_dir, model_zipfile_name)
+    if not os.path.exists(model):
+        logging.info(f"Extracting {args.model_name} to {model}")
+        try:
+            with zipfile.ZipFile(os.path.abspath(args.model_name), 'r') as zip_ref:
+                zip_ref.extractall(model)
+        except Exception as e:
+            logging.error(f"Failed to extract zip file {args.model_name}: {e}")
+            update_payload_status(args.id, status="failed")
+            sys.exit(1)
+    else:
+        logging.info(f"Model directory {model} already exists and is not empty, skipping extraction.")
+else:
+    # handle custom model uploaded to directory
+    model = os.path.join(custom_models_dir, args.model_name)
+    if not os.path.exists(model):
+        # predefined model or hugging face model id
+        model = os.path.join(models_dir, args.model_name)
+        if platform.system() == "Windows":
+            current_dir = os.getcwd()
+            model = os.path.join(current_dir, model).replace("/", "\\")
+        logging.info(f"Model: {model}")
+    else:
+        logging.info(f"Custom Model: {model} exists.")
+
+# download model if it doesn't exist
+if not os.path.exists(model):
+    logging.info(f"Model {model} not found. Downloading...")
+    optimum_cli(args.model_name, model)
+
+if os.path.realpath(model) != os.path.abspath(
+    model
+):  # Check if the model path is a symlink
+    logging.error(
+        f"Model file {model} is a symlink or contains a symlink in its path. Refusing to open for security reasons."
+    )
+    update_payload_status(args.id, status="failed")
+    sys.exit(1)
+
+try:
+    pipe = openvino_genai.Text2ImagePipeline(model, args.device)
+    update_payload_status(args.id, status="active")
+except Exception as e:
+    logging.error(f"Error loading model: {e}")
+    update_payload_status(args.id, status="failed")
+    sys.exit(1)
+
+
+class Request(BaseModel):
+    prompt: str
+    inference_step: int = 1
+    image_width: int = 256
+    image_height: int = 256
+
+
+@app.post("/infer")
+async def generate_image(request: Request):
+    try:
+        start_time = time.perf_counter()
+        image_tensor = pipe.generate(
+            request.prompt,
+            width=request.image_width,
+            height=request.image_height,
+            num_inference_steps=request.inference_step,
+            num_images_per_prompt=1,
+        )
+
+        inference_time = time.perf_counter() - start_time
+        image = Image.fromarray(image_tensor.data[0])
+        image_byte_arr = io.BytesIO()  # in-memory storage
+        image.save(image_byte_arr, format="PNG")
+        image_byte_arr.seek(0)
+        image_base64 = base64.b64encode(image_byte_arr.read()).decode("utf-8")
+
+        return {"generation_time_s": round(inference_time, 1), "image": image_base64}
+    except Exception as e:
+        logging.error(f"Error generating image: {e}")
+        return JSONResponse(
+            {"status": False, "message": "An error occurred while generating the image"}
+        )
+
+
+uvicorn.run(
+    app,
+    host="127.0.0.1",
+    port=args.port,
+)
