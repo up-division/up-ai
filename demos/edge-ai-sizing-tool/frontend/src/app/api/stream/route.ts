@@ -30,6 +30,7 @@ export async function GET(request: Request) {
 
   // Build the safe URL
   const safeURL = `http://localhost:${portNumber}/result`
+  //const safeURL = `http://localhost:${portNumber}/video`
 
   try {
     const response = await fetch(safeURL)

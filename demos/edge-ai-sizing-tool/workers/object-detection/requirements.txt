@@ -4,3 +4,15 @@ openvino-dev[onnx,pytorch,tensorflow]==2024.6.0
 nncf==2.14.0
 uvicorn==0.34.0
 fastapi==0.115.11
+
+openvino
+utils
+torch
+torchvision
+tqdm
+scikit-learn
+pandas
+seaborn
+nncf>=2.8.1
+matplotlib>=3.4
+pyyaml

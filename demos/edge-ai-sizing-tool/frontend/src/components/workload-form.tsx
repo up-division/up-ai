@@ -839,7 +839,7 @@ export default function WorkloadForm({ workload }: { workload?: Workload }) {
                             </Select>
                           </>
                         )}
-                        {
+                        {addWorkload.usecase?.includes('(DLStreamer)') && (
                           <div className="grid gap-2">
                             <Label htmlFor="numStreams">
                               Number of streams
@@ -872,7 +872,7 @@ export default function WorkloadForm({ workload }: { workload?: Workload }) {
                               className="w-24 rounded border px-2 py-1"
                             />
                           </div>
-                        }
+                        )}
                       </div>
                     )}
 

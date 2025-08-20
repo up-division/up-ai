@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
+from ast import Global
 import cv2
 import logging
 import math
@@ -26,29 +27,25 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from yolo_download import export_yolo_model
 
+import openvino as ov
+import torch
+from utils.augmentations import letterbox
+from PIL import Image
+from utils.plots import Annotator, colors
+from notebook_utils import VideoPlayer
+import collections
+from typing import List, Tuple
+from utils.general import scale_boxes, non_max_suppression
+
+
+import xml.etree.ElementTree as ET
+
+core=ov.Core()
+
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
-
-if(platform.system()=='Linux'):
-    # Set environment variables to enable dlstreamer
-    os.environ["LIBVA_DRIVER_NAME"] = "iHD"
-    os.environ["GST_PLUGIN_PATH"] = (
-        "/opt/intel/dlstreamer/build/intel64/Release/lib:/opt/intel/dlstreamer/gstreamer/lib/gstreamer-1.0:/opt/intel/dlstreamer/gstreamer/lib/"
-    )
-    os.environ["LD_LIBRARY_PATH"] = (
-        "/opt/intel/dlstreamer/gstreamer/lib:/opt/intel/dlstreamer/build/intel64/Release/lib:/opt/intel/dlstreamer/lib/gstreamer-1.0:/usr/lib:/opt/intel/dlstreamer/build/intel64/Release/lib:/opt/opencv:/opt/openh264:/opt/rdkafka:/opt/ffmpeg:/usr/local/lib/gstreamer-1.0:/usr/local/lib"
-    )
-    os.environ["LIBVA_DRIVERS_PATH"] = "/usr/lib/x86_64-linux-gnu/dri"
-    os.environ["GST_VA_ALL_DRIVERS"] = "1"
-    os.environ["PATH"] = (
-        f"/opt/intel/dlstreamer/gstreamer/bin:/opt/intel/dlstreamer/build/intel64/Release/bin:{os.environ['PATH']}"
-    )
-
-    env = os.environ.copy()
-    venv_path = os.path.dirname(sys.executable)
-    env["PATH"] = f"{venv_path}:{env['PATH']}"
 
 VIDEO_DIR = Path("../assets/media")
 MODEL_DIR = Path("./models")
@@ -213,193 +210,6 @@ def parse_arguments():
 
 args = parse_arguments()
 
-
-def build_compositor_props(num_streams, final_width, final_height):
-    """
-    Method to dynamically split a single final_width * final_height compositor output window into a grid of N sub-windows.
-    """
-    # Determine how many columns and rows a square-ish grid would need
-    grid_cols = math.ceil(math.sqrt(num_streams))
-    grid_rows = math.ceil(num_streams / grid_cols)
-
-    # Calculate each sub-window width and height
-    sub_width = final_width // grid_cols
-    sub_height = final_height // grid_rows
-
-    comp_props = []
-    for i in range(num_streams):
-        row = i // grid_cols
-        col = i % grid_cols
-
-        xpos = col * sub_width
-        ypos = row * sub_height
-
-        comp_props.append(
-            f"sink_{i}::xpos={xpos} "
-            f"sink_{i}::ypos={ypos} "
-            f"sink_{i}::width={sub_width} "
-            f"sink_{i}::height={sub_height}"
-        )
-
-    return " ".join(comp_props)
-
-
-def build_pipeline(
-    tcp_port,
-    input,
-    inference_mode,
-    model_full_path,
-    model_label_path,
-    device,
-    decode_device,
-    batch_size=1,
-    number_of_streams=1,
-):
-    """
-    Build the DLStreamer pipeline for MJPEG streaming.
-    """
-    
-    # Check if input is a videofile
-    if input.endswith((".mp4", ".avi", ".mov")):
-        source_command = [" multifilesrc", f"location={input}", "loop=true"]
-    elif input.startswith("rtsp://"):
-        source_command = ["rtspsrc", f"location={input}", "protocols=tcp"]
-    else:
-        # Default to webcam
-        if number_of_streams > 1:
-            source_command = [
-                "v4l2src",
-                f"device={input}",
-                "!",
-                "videoconvert",
-                "!",
-                "tee",
-                "name=camtee",
-                "!",
-                "multiqueue",
-                "name=camq",
-            ]
-        else:
-            source_command = ["v4l2src", f"device={input}"]
-
-    # Configure decode element
-    if "CPU" in decode_device:
-        if input.startswith("/dev/video"):
-            decode_element = ["decodebin3", "!", "videoconvert", "!", "video/x-raw"]
-        else:
-            decode_element = [
-                "rtph264depay",
-                "!",
-                "avdec_h264",
-                "!",
-                "videoconvert",
-                "!",
-                "video/x-raw",
-            ]
-    elif "GPU" in decode_device:
-        decode_element = [
-            "rtph264depay",
-            "!",
-            "avdec_h264",
-            "!",
-            "vapostproc",
-            "!",
-            "video/x-raw(memory:VAMemory)",
-        ]
-    else:
-        logging.error("Incorrect parameter DECODE_DEVICE. Supported values: CPU, GPU")
-        sys.exit(1)
-
-    # Configure inference command
-    inference_command = [
-        f"{inference_mode}",
-        f"model={model_full_path}",
-        f"device={device}",
-    ]
-    
-    if model_label_path is not None:
-        inference_command.append(f"labels-file={model_label_path}")
-
-    if "GPU" in decode_device and "GPU" in device:
-        inference_command.append(f"batch-size={batch_size}")
-        inference_command.append("nireq=4")
-        inference_command.append("pre-process-backend=va-surface-sharing")
-    elif "GPU" in decode_device and "CPU" in device:
-        inference_command.append("pre-process-backend=va")
-
-    comp_props_str = build_compositor_props(
-        args.number_of_streams, args.width_limit, args.height_limit
-    )
-    comp_props = comp_props_str.split()
-    logging.info(f"Compositor properties: {comp_props_str}")
-
-    # Build the compositor pipeline
-    pipeline = (
-        ["gst-launch-1.0", "compositor", "name=comp"]
-        + comp_props
-        + ["!"]
-        + ["jpegenc", "!", "multipartmux", "boundary=frame"]
-        + ["!"]
-        + ["tcpserversink", f"host=127.0.0.1", f"port={tcp_port}"]
-    )
-    logging.info(f"Partial Pipeline={pipeline}")
-
-    # Compose the full pipeline
-    if input.startswith("/dev/video") and number_of_streams > 1:
-        # For multiple webcam streams, use tee to split the source
-        pipeline += source_command
-        for i in range(number_of_streams):
-            pipeline += (
-                [
-                    f"camtee.",
-                    "!",
-                    "queue",
-                    "max-size-buffers=10",
-                    "leaky=downstream",
-                    "!",
-                ]
-                + decode_element
-                + [
-                    "!",
-                    *inference_command,
-                    "!",
-                    "queue",
-                    "!",
-                    "gvafpscounter",
-                    "!",
-                    "gvawatermark",
-                    "!",
-                    "videoconvert",
-                    "!",
-                    f"comp.sink_{i}",
-                ]
-            )
-    else:
-        for i in range(number_of_streams):
-            pipeline += (
-                source_command
-                + ["!"]
-                + decode_element
-                + ["!"]
-                + inference_command
-                + [
-                    "!",
-                    "queue",
-                    "!",
-                    "gvafpscounter",
-                    "!",
-                    "gvawatermark",
-                    "!",
-                    "videoconvert",
-                    "!",
-                    f"comp.sink_{i}",
-                ]
-            )
-    # Log the pipeline
-    logging.info(f"Full pipeline={' '.join(pipeline)}\n")
-    return pipeline
-
-
 def stop_signal_handler(sig, frame):
     """
     Signal handler for SIGINT to terminate worker
@@ -409,90 +219,6 @@ def stop_signal_handler(sig, frame):
 
 
 signal.signal(signal.SIGINT, stop_signal_handler)
-
-
-def run_pipeline(pipeline):
-    """
-    Run the GStreamer pipeline and process its output in real-time.
-    Handles EOS for looping and updates pipeline metrics.
-    """
-    logging.info("Starting GStreamer pipeline...")
-    try:
-        process = sp.Popen(pipeline, stdout=sp.PIPE, stderr=sp.PIPE, text=True)
-        # Monitor the pipeline's stdout
-        for line in process.stdout:
-            logging.info(line.strip())
-            # Process each line of output using filter_result
-            metrics = filter_result(line.strip())
-            if metrics:
-                app.state.pipeline_metrics.update(metrics)
-
-        # Capture any errors from stderr
-        for error_line in process.stderr:
-            logging.error(error_line.strip())
-
-        # Check if the process exited due to EOS
-        if process.returncode == 0 or process.returncode is None:
-            logging.info("Pipeline reached EOS. Restarting...")
-            process.communicate()
-        else:
-            logging.error(f"Pipeline exited with error code: {process.returncode}")
-
-    except Exception as e:
-        logging.error(f"Unexpected error: {e}")
-        if process and process.poll() is None:
-            process.terminate()
-            process.wait()
-    finally:
-        if process and process.poll() is None:
-            process.terminate()
-            process.wait()
-
-
-def filter_result(output):
-    """
-    Extract the FPS metrics from the command output.
-
-    Args:
-        output (str): The standard output from the command.
-
-    Returns:
-        dict: A dictionary containing the total FPS, the number of streams, the average FPS per stream, a mapping of individual stream FPS values and timestamp.
-    """
-    fps_pattern = re.compile(
-        r"FpsCounter\(.*\): total=(\d+\.\d+) fps, number-streams=(\d+), per-stream=(\d+\.\d+) fps(?: \((.*?)\))?"
-    )
-    match = fps_pattern.search(output)
-    if match:
-        total_fps_str = match.group(1)
-        number_streams_str = match.group(2)
-        average_fps_per_stream_str = match.group(3)
-        all_streams_fps_str = match.group(4)
-
-        total_fps = float(total_fps_str)
-        number_streams = int(number_streams_str)
-        average_fps_per_stream = float(average_fps_per_stream_str)
-
-        if all_streams_fps_str:
-            all_streams_fps = [float(x.strip()) for x in all_streams_fps_str.split(",")]
-        else:
-            # If there is only one stream
-            all_streams_fps = [average_fps_per_stream]
-
-        fps_streams = {
-            f"stream_id {i+1}": fps_val
-            for i, fps_val in enumerate(all_streams_fps[:number_streams])
-        }
-
-        return {
-            "total_fps": total_fps,
-            "number_streams": number_streams,
-            "average_fps_per_stream": average_fps_per_stream,
-            "fps_streams": fps_streams,
-            "timestamp": time.time(),
-        }
-    return None
-
 
 def is_rtsp_stream_running(rtsp_url, retries=5, delay=1):
     """
@@ -538,7 +264,12 @@ def is_valid_id(id):
         return True
     return False
 
-def opencv_server_image(tcp_port,input):
+def opencv_server_image(
+        tcp_port,
+        input,
+        model_full_path,
+        model_label_path,
+        device):
     
     TCP_IP = "127.0.0.1"
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -546,24 +277,79 @@ def opencv_server_image(tcp_port,input):
     server_socket.listen(5)
     conn, addr = server_socket.accept()
 
-    cap = cv2.VideoCapture(int(input))
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        _, jpeg = cv2.imencode('.jpg', frame)
-        jpeg_bytes = jpeg.tobytes()
-        header = b"--frame\r\nContent-Type: image/jpeg\r\n\r\n"
-        footer = b"\r\n"
-        conn.sendall(header + jpeg_bytes + footer)
+    player = None
+    try:
+        player = VideoPlayer(source=input, flip=False, fps=30, skip_first_frames=0)
+        # Start capturing.
+        player.start()
+        processing_times = collections.deque()
+        while True:
+            frame = player.next()
+            if frame is None:
+                player = VideoPlayer(source=input, flip=False, fps=30, skip_first_frames=0)
+                # Start capturing.
+                player.start()
+                continue
             
-    cap.release()
+            _, jpeg = cv2.imencode('.jpg', frame)
+
+
+            start_time = time.time()
+            
+            jpeg_bytes = jpeg.tobytes()
+            header = b"--frame\r\nContent-Type: image/jpeg\r\n\r\n"
+            footer = b"\r\n"
+            conn.sendall(header + jpeg_bytes + footer)
+        
+            stop_time = time.time()
+            processing_times.append(stop_time - start_time)
+            if len(processing_times) > 200:
+                processing_times.popleft()
+            processing_time = np.mean(processing_times) * 1000
+            fps = 1000 / processing_time
+            
+            app.state.pipeline_metrics.update({
+            "total_fps": fps,
+            "number_streams": 1,
+            "average_fps_per_stream": fps,
+            "fps_streams": fps,
+            "timestamp": time.time(),
+            })
+    except RuntimeError as e:
+        print(e)
+    finally:
+        if player is not None:
+            # Stop capturing.
+            player.stop()
+            
+    # if(input.isdigit()):
+    #     cap = cv2.VideoCapture(int(input))
+    # else:
+    #     cap=cv2.VideoCapture(input)
+
+    # while True:
+    #     ret, frame = cap.read()
+    #     if not ret:
+    #         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+    #         continue
+        # _, jpeg = cv2.imencode('.jpg', frame)
+        # jpeg_bytes = jpeg.tobytes()
+        # header = b"--frame\r\nContent-Type: image/jpeg\r\n\r\n"
+        # footer = b"\r\n"
+        # conn.sendall(header + jpeg_bytes + footer)
+            
+    # cap.release()
     conn.close()
     server_socket.close()
-    
+
+model_full_path=""
+model_label_path=""
     
 def main():
+
+    global model_full_path
+    global model_label_path
     """
     Main function to start the GStreamer pipeline.
     """
@@ -600,43 +386,8 @@ def main():
             )
             update_payload_status(args.id, status="failed")
             exit(1)
-        filename = os.path.splitext(os.path.basename(args.input))[0]
-        rtsp_url = f"{RTSP_SERVER_URL}/{filename}-{args.id}"
-        logging.info(f"Hosting RTSP stream at: {rtsp_url}")
-        ffmpeg_command = [
-            "ffmpeg",
-            "-re",
-            "-stream_loop",
-            "-1",
-            "-i",
-            args.input,
-            "-c",
-            "copy",
-            "-f",
-            "rtsp",
-            "-rtsp_transport",
-            "tcp",
-            rtsp_url,
-        ]
-        args.input = rtsp_url
-
-        try:
-            # ffmpeg_process = sp.Popen(ffmpeg_command, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
-            ffmpeg_process = sp.Popen(
-                ffmpeg_command, stdout=sp.DEVNULL, stderr=sp.DEVNULL
-            )
-            logging.info(f"Started RTSP streaming with PID: {ffmpeg_process.pid}")
-        except sp.CalledProcessError as e:
-            logging.error(f"Failed to host RTSP stream: {e}")
-
-    # Check if the RTSP stream is running
-    # if not is_rtsp_stream_running(args.input, retries=5, delay=1):
-    #     logging.error("RTSP stream is not running after multiple attempts. Exiting...")
-    #     update_payload_status(args.id, status="failed")
-    #     exit(1)
-    # else:
-    #     time.sleep(5)  # Give 5 seconds for mediamtx to start digesting the stream
-
+    
+    
     model_label_path = None
 
     if args.model.endswith(".zip"):
@@ -660,6 +411,7 @@ def main():
             update_payload_status(args.id, status="failed")
             exit(1)
         model_full_path = model_files[0]
+        
         # Find model label file
         label_files = list(model_extract_dir.glob("*.txt"))
         if label_files:
@@ -693,24 +445,27 @@ def main():
             if label_files:
                 model_label_path = label_files[0]
 
-    # Build the pipeline
-    # pipeline = build_pipeline(
-    #     tcp_port=args.tcp_port,
-    #     inference_mode=args.inference_mode,
-    #     input=args.input,
-    #     model_full_path=model_full_path,
-    #     model_label_path=model_label_path,
-    #     device=args.device,
-    #     decode_device=args.decode_device,
-    #     number_of_streams=args.number_of_streams,
-    # )
+    global NAMES
+    tree = ET.parse(model_full_path)
+    root = tree.getroot()
+    rt_info = root.find("rt_info")
+    model_info = rt_info.find("model_info")
+    labels_str = model_info.find("labels").attrib["value"]
+    labels_list = labels_str.split()
 
+    NAMES = {i: label for i, label in enumerate(labels_list)}
+    
     # Start the pipeline
     logging.info("Starting the pipeline...")
     try:
         update_payload_status(args.id, status="active")
-        # run_pipeline(pipeline)
-        opencv_server_image(tcp_port=args.tcp_port,input=args.input)
+        
+        # opencv_server_image(tcp_port=args.tcp_port,
+        #                     input=args.input,
+        #                     model_full_path=model_full_path,
+        #                     model_label_path=model_label_path,
+        #                     device=args.device)
+        
     except KeyboardInterrupt:
         logging.info("Pipeline interrupted. Exiting...")
     except Exception as e:
@@ -758,6 +513,231 @@ def mjpeg_stream(host: str = "127.0.0.1", port: int = 5000):
                     logging.info(f"Error processing frame: {e}")
 
 
+def generate_frames():
+    cap = cv2.VideoCapture(args.input)  # 改成影片路徑也可以
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    
+    delay = int(1000 / fps)
+    
+    prev_time = time.time()
+
+    while True:
+        success, frame = cap.read()
+        if not success:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            continue
+        _, buffer = cv2.imencode('.jpg', frame)
+        frame_bytes = buffer.tobytes()
+        yield (b"--frame\r\n"
+               b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n")
+        curr_time = time.time()
+        fps = 1 / (curr_time - prev_time)
+        prev_time = curr_time
+        app.state.pipeline_metrics.update({
+            "total_fps": fps,
+            "number_streams": 1,
+            "average_fps_per_stream": fps,
+            "fps_streams": fps,
+            "timestamp": time.time(),
+            })
+        cv2.waitKey(delay)
+    cap.release()
+    
+def prepare_input_tensor(image: np.ndarray):
+    """
+    Converts preprocessed image to tensor format according to YOLOv9 input requirements.
+    Takes image in np.array format with unit8 data in [0, 255] range and converts it to torch.Tensor object with float data in [0, 1] range
+
+    Parameters:
+      image (np.ndarray): image for conversion to tensor
+    Returns:
+      input_tensor (torch.Tensor): float tensor ready to use for YOLOv9 inference
+    """
+    input_tensor = image.astype(np.float32)  # uint8 to fp16/32
+    input_tensor /= 255.0  # 0 - 255 to 0.0 - 1.0
+
+    if input_tensor.ndim == 3:
+        input_tensor = np.expand_dims(input_tensor, 0)
+    return input_tensor
+
+def preprocess_image(img0: np.ndarray):
+    """
+    Preprocess image according to YOLOv9 input requirements.
+    Takes image in np.array format, resizes it to specific size using letterbox resize, converts color space from BGR (default in OpenCV) to RGB and changes data layout from HWC to CHW.
+
+    Parameters:
+      img0 (np.ndarray): image for preprocessing
+    Returns:
+      img (np.ndarray): image after preprocessing
+      img0 (np.ndarray): original image
+    """
+    # resize
+    img = letterbox(img0, auto=False)[0]
+
+    # Convert
+    img = img.transpose(2, 0, 1)
+    img = np.ascontiguousarray(img)
+    return img, img0
+
+def detect(
+    model: ov.Model,
+    image_path: Path,
+    conf_thres: float = 0.25,
+    iou_thres: float = 0.45,
+    classes: List[int] = None,
+    agnostic_nms: bool = False,
+):
+    """
+    OpenVINO YOLOv9 model inference function. Reads image, preprocess it, runs model inference and postprocess results using NMS.
+    Parameters:
+        model (Model): OpenVINO compiled model.
+        image_path (Path): input image path.
+        conf_thres (float, *optional*, 0.25): minimal accepted confidence for object filtering
+        iou_thres (float, *optional*, 0.45): minimal overlap score for removing objects duplicates in NMS
+        classes (List[int], *optional*, None): labels for prediction filtering, if not provided all predicted labels will be used
+        agnostic_nms (bool, *optional*, False): apply class agnostic NMS approach or not
+    Returns:
+       pred (List): list of detections with (n,6) shape, where n - number of detected boxes in format [x1, y1, x2, y2, score, label]
+       orig_img (np.ndarray): image before preprocessing, can be used for results visualization
+       inpjut_shape (Tuple[int]): shape of model input tensor, can be used for output rescaling
+    """
+    if isinstance(image_path, np.ndarray):
+        img = image_path
+    else:
+        img = np.array(Image.open(image_path))
+    preprocessed_img, orig_img = preprocess_image(img)
+    input_tensor = prepare_input_tensor(preprocessed_img)
+    predictions = torch.from_numpy(model(input_tensor)[0])
+    pred = non_max_suppression(predictions, conf_thres, iou_thres, classes=classes, agnostic=agnostic_nms)
+    return pred, orig_img, input_tensor.shape
+
+def draw_boxes(
+    predictions: np.ndarray,
+    input_shape: Tuple[int],
+    image: np.ndarray,
+    names,
+    # names: List[str],
+):
+    """
+    Utility function for drawing predicted bounding boxes on image
+    Parameters:
+        predictions (np.ndarray): list of detections with (n,6) shape, where n - number of detected boxes in format [x1, y1, x2, y2, score, label]
+        image (np.ndarray): image for boxes visualization
+        names (List[str]): list of names for each class in dataset
+        colors (Dict[str, int]): mapping between class name and drawing color
+    Returns:
+        image (np.ndarray): box visualization result
+    """
+    if not len(predictions):
+        return image
+
+    annotator = Annotator(image, line_width=1, example=str(names))
+    # Rescale boxes from input size to original image size
+    predictions[:, :4] = scale_boxes(input_shape[2:], predictions[:, :4], image.shape).round()
+
+    # Write results
+    for *xyxy, conf, cls in reversed(predictions):
+        label = f"{names.get(int(cls),'Unkown')} {conf:.2f}"        
+
+        annotator.box_label(xyxy, label, color=colors(int(cls), True))
+    return image
+
+def run_object_detection(
+    source=0,
+    flip=False,
+    skip_first_frames=0,
+    model=model_full_path,
+    device=args.device,
+    video_width: int = None,  # if not set the original size is used
+):
+    player = None
+    
+    ov_model = core.read_model(model_full_path)
+
+    global NAMES
+    compiled_model = core.compile_model(ov_model, device)
+    
+    try:
+        while True:
+            # Create a video player to play with target fps.
+            player = VideoPlayer(source=source, flip=flip, fps=30, skip_first_frames=skip_first_frames)
+            # Start capturing.
+            player.start()
+    
+            processing_times = collections.deque()
+            while True:
+                # Grab the frame.
+                frame = player.next()
+                if frame is None:
+                    print("Source ended")
+                    # player.start()
+                    # continue
+                    break
+    
+                if video_width:
+                    # If the frame is larger than video_width, reduce size to improve the performance.
+                    # If more, increase size for better demo expirience.
+    
+                    scale = video_width / max(frame.shape)
+                    frame = cv2.resize(
+                        src=frame,
+                        dsize=None,
+                        fx=scale,
+                        fy=scale,
+                        interpolation=cv2.INTER_AREA,
+                    )
+    
+                # Get the results.
+                input_image = np.array(frame)
+    
+                start_time = time.time()
+                detections, _, input_shape = detect(compiled_model, input_image[:, :, ::-1])
+                stop_time = time.time()
+                
+                image_with_boxes = draw_boxes(detections[0], input_shape, input_image, NAMES)
+    
+                frame = image_with_boxes
+
+                processing_times.append(stop_time - start_time)
+                # Use processing times from last 200 frames.
+                if len(processing_times) > 200:
+                    processing_times.popleft()
+
+                _, f_width = frame.shape[:2]
+                # Mean processing time [ms].
+                processing_time = np.mean(processing_times) * 1000
+                fps = 1000 / processing_time
+                
+                app.state.pipeline_metrics.update({
+                "total_fps": fps,
+                "number_streams": 0,
+                "average_fps_per_stream": fps,
+                "fps_streams": fps,
+                "timestamp": time.time(),
+                })
+            
+                _, buffer = cv2.imencode(ext=".jpg", img=frame, params=[cv2.IMWRITE_JPEG_QUALITY, 100])
+                frame_bytes = buffer.tobytes()
+                yield (b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n")
+    # ctrl-c
+    except KeyboardInterrupt:
+        print("Interrupted")
+    # any different error
+    except RuntimeError as e:
+        print(e)
+    finally:
+        if player is not None:
+            # Stop capturing.
+            player.stop()
+
+
+
+@app.get("/video")
+def video_feed():
+    return StreamingResponse(generate_frames(), media_type="multipart/x-mixed-replace; boundary=frame")
+
+
 @app.get("/result")
 def get_mjpeg_stream():
     """
@@ -765,7 +745,11 @@ def get_mjpeg_stream():
     """
     try:
         return StreamingResponse(
-            mjpeg_stream(port=args.tcp_port),
+            run_object_detection(source=args.input,
+                                 flip=False,
+                                 skip_first_frames=0,
+                                 model=model_full_path,
+                                  device=args.device),
             media_type="multipart/x-mixed-replace; boundary=frame",
         )
     except Exception as e:
@@ -775,6 +759,24 @@ def get_mjpeg_stream():
                 "message": "An error occurred while retrieving mjpeg stream",
             }
         )
+    
+# @app.get("/result")
+# def get_mjpeg_stream():
+#     """
+#     Serve the MJPEG stream as an HTTP response.
+#     """
+#     try:
+#         return StreamingResponse(
+#             mjpeg_stream(port=args.tcp_port),
+#             media_type="multipart/x-mixed-replace; boundary=frame",
+#         )
+#     except Exception as e:
+#         return JSONResponse(
+#             {
+#                 "status": False,
+#                 "message": "An error occurred while retrieving mjpeg stream",
+#             }
+#         )
 
 
 @app.get("/api/metrics")
