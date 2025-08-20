@@ -71,8 +71,8 @@ const runCommand = (command) => {
     try {
       const [cmdName, ...rawArgs] = command.split(' ')
       if (isWindows && rawArgs[1] === 'npm') {
-          //rawArgs[1] = "%NPM_CLI_JS%"
-          rawArgs[1] = "C:/NodeJS/node_modules/npm/bin/npm-cli.js"
+          rawArgs[1] = "%NPM_CLI_JS%"
+          //rawArgs[1] = "C:/NodeJS/node_modules/npm/bin/npm-cli.js"
       }
 
       if (!Object.keys(ALLOWED_COMMANDS).includes(cmdName)) {
