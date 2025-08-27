@@ -18,9 +18,15 @@ main_menu() {
 
     case $demo in
         0) exit 0 ;;
-        1) objv_menu;;
-        2) objc_menu ;;
-        3) chatbot_menu ;;
+        1)
+            python3 $ori_dir/inst/linux/app/scanf_driver.py -env -at 1
+            objv_menu;;
+        2) 
+            python3 $ori_dir/inst/linux/app/scanf_driver.py -env -at 1
+            objc_menu ;;
+        3) 
+            python3 $ori_dir/inst/linux/app/scanf_driver.py -env -at 2
+            chatbot_menu ;;
         *) 
             echo "Unknown option, please choose again!"
             read -n 1 -s -p "Press any key to continue..."  # Wait for user to continue
@@ -257,4 +263,10 @@ chatbot_menu() {
 }
 
 # Start the script by calling the main menu
+if [ $# -lt 1 ] ; then
+cd $ori_dir/demos/edge-ai-sizing-tool
+./start.sh
+firefox "http://localhost:8080/"
+else
 main_menu
+fi

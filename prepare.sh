@@ -41,6 +41,16 @@ install_driver() {
     echo "Driver is already installed !"
 }
 
+install_tools() {
+    python3 $ori_dir/inst/linux/app/scanf_driver.py -env -at 1
+    python3 $ori_dir/inst/linux/app/scanf_driver.py -env -at 2
+    echo "installing Edge AI Sizing Tool"
+    sudo $ori_dir/demos/edge-ai-sizing-tool/install.sh
+    cd $ori_dir/demos/edge-ai-sizing-tool
+    ./start.sh
+    cd $ori_dirs
+}
+
 install_min() {
     clear
     echo ===========================================
@@ -54,7 +64,7 @@ install_min() {
 	
 	case $app in
     	0) 
-			main_menu;;
+	    install_min;;
         1) 
             # source $PWD/env_list/ov-obj_det.sh
             python3 $ori_dir/inst/linux/app/scanf_driver.py -env -at 1
@@ -66,13 +76,14 @@ install_min() {
         *) 
             echo "Unknown option, please choose again!"
             read -p "Press any key to continue..."  # Wait for user to continue
-            install_env
+            install_min
             ;;
     esac
 }
 
 install_git
 install_driver
-install_min
+install_tools
+#install_min
 
 echo "Enviroment Installation is Complete! Please Reboot!"
