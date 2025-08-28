@@ -2,7 +2,7 @@
 setlocal
 
 REM Navigate to the frontend directory
-cd C:\EAST\frontend
+cd %~dp0%frontend
 if %errorlevel% neq 0 (
     echo Failed to navigate to the 'frontend' directory. Please check if it exists.
     echo Press any key to exit...

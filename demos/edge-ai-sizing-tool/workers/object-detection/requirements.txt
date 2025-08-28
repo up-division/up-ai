@@ -16,3 +16,4 @@ seaborn
 nncf>=2.8.1
 matplotlib>=3.4
 pyyaml
+IPython

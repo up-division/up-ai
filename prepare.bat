@@ -18,7 +18,15 @@ echo Executed as administrator!
 
 :Start
 
-call %~dp0%\inst\win\set_env.bat
+winget >nul 2>&1
+if %errorlevel% equ 0 (
+    echo Have Winget 
+) else (
+    call %~dp0%inst\win\winget_install.bat
+    call %refresh%
+)
+
+call %~dp0%inst\win\set_env.bat
 
 if %winpkg% equ 0 (
 
@@ -82,6 +90,7 @@ if %errorlevel% equ 0 (
     winget %git_installer%
 
 )
+call %refresh%
 :: ======================Install Node.js===================
 echo [Step 4 / %total_step%]
 call %chk_net%
@@ -106,6 +115,9 @@ if %errorlevel% equ 0 (
         exit /b
     )
 )
+
+call %refresh%
+
 REM Disable path length limit for Python
 echo Disabling path length limit...
 set "REG_PATH=HKLM\SYSTEM\CurrentControlSet\Control\FileSystem"
