@@ -42,6 +42,9 @@ import xml.etree.ElementTree as ET
 
 core=ov.Core()
 
+latest_frame = None
+lock = threading.Lock()
+
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -342,14 +345,9 @@ def opencv_server_image(
     # cap.release()
     conn.close()
     server_socket.close()
-
-model_full_path=""
-model_label_path=""
     
 def main():
 
-    global model_full_path
-    global model_label_path
     """
     Main function to start the GStreamer pipeline.
     """
@@ -459,6 +457,11 @@ def main():
     logging.info("Starting the pipeline...")
     try:
         update_payload_status(args.id, status="active")
+        run_object_detection( source= int(args.input) if args.input.isdigit() else args.input,
+                                 flip=False,
+                                 skip_first_frames=0,
+                                 model=model_full_path,
+                                 device=args.device)
         
         # opencv_server_image(tcp_port=args.tcp_port,
         #                     input=args.input,
@@ -646,13 +649,14 @@ def run_object_detection(
     source=0,
     flip=False,
     skip_first_frames=0,
-    model=model_full_path,
+    model="",
     device=args.device,
     video_width: int = None,  # if not set the original size is used
 ):
+    global latest_frame
     player = None
     
-    ov_model = core.read_model(model_full_path)
+    ov_model = core.read_model(model)
 
     global NAMES
     compiled_model = core.compile_model(ov_model, device)
@@ -660,7 +664,9 @@ def run_object_detection(
     try:
         while True:
             # Create a video player to play with target fps.
-            player = VideoPlayer(source=source, flip=flip, fps=30, skip_first_frames=skip_first_frames)
+            # player = VideoPlayer(source=source, flip=flip, fps=30, skip_first_frames=skip_first_frames)
+            player = VideoPlayer(source=source, flip=flip, fps=60, skip_first_frames=skip_first_frames)
+
             # Start capturing.
             player.start()
     
@@ -710,27 +716,37 @@ def run_object_detection(
                 
                 app.state.pipeline_metrics.update({
                 "total_fps": fps,
-                "number_streams": 0,
+                "number_streams": 1,
                 "average_fps_per_stream": fps,
                 "fps_streams": fps,
                 "timestamp": time.time(),
                 })
-            
-                _, buffer = cv2.imencode(ext=".jpg", img=frame, params=[cv2.IMWRITE_JPEG_QUALITY, 100])
-                frame_bytes = buffer.tobytes()
-                yield (b"--frame\r\n"
-                b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n")
+                with lock:
+                    latest_frame = frame
+            if player is not None:
+            # Stop capturing.
+                player.stop()
+                
     # ctrl-c
     except KeyboardInterrupt:
         print("Interrupted")
     # any different error
     except RuntimeError as e:
         print(e)
-    finally:
-        if player is not None:
-            # Stop capturing.
-            player.stop()
 
+        
+def mjpeg_generator():
+    global latest_frame
+    while True:
+        with lock:
+            if latest_frame is None:
+                continue
+            ret, jpeg = cv2.imencode('.jpg', latest_frame)
+            if not ret:
+                continue
+            frame_bytes = jpeg.tobytes()
+        yield (b"--frame\r\n"
+               b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n")
 
 
 @app.get("/video")
@@ -743,13 +759,10 @@ def get_mjpeg_stream():
     """
     Serve the MJPEG stream as an HTTP response.
     """
+    
     try:
         return StreamingResponse(
-            run_object_detection(source=args.input,
-                                 flip=False,
-                                 skip_first_frames=0,
-                                 model=model_full_path,
-                                  device=args.device),
+            mjpeg_generator(),
             media_type="multipart/x-mixed-replace; boundary=frame",
         )
     except Exception as e:

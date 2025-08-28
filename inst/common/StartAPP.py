@@ -12,7 +12,8 @@ from common import clear_screen,pause
 
 apps_win = [{"app":"Object Detection - video","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', '..', 'demos','obj-detect', 'run.bat'),'1']},
         {"app":"Object Detection - camera","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', '..', 'demos','obj-detect', 'run.bat'),'2']},
-        {"app":"Chatbot","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', '..', 'demos','chatbot', 'run.bat')]}
+        {"app":"Chatbot","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', '..', 'demos','chatbot', 'run.bat')]},
+        {"app":"Edgi-ai-sizing-tool","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', '..', 'demos','edge-ai-sizing-tool', 'start.bat')]}
         ]  
 
 apps_linux = [{"app":"Object Detection - video","cmd":[os.path.join(os.path.dirname(os.path.realpath(__file__)), 'run', 'obj.bat'),'1']},

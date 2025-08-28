@@ -1,9 +1,9 @@
-// Copyright (C) 2025 Intel Corporation
+﻿// Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import {
@@ -49,6 +49,7 @@ export function ObjectDetection({ workload }: ObjectProps) {
           const newEntry: Record<string, number> = {
             time: Date.now(),
             total_fps: total_fps, // store total in the same record
+            fps_streams: fps_streams, // store total in the same record
           }
 
           for (const [streamId, fpsValue] of Object.entries(fps_streams)) {
@@ -81,7 +82,6 @@ export function ObjectDetection({ workload }: ObjectProps) {
     if (index === maxCount - 1) return '0'
     return '' // middle ticks are blank
   }
-
   // Plot each stream's FPS as a separate line, exclude total_fps and time
   const allNumericKeys = Object.keys(streamFpsData[0] ?? {}).filter(
     (k) => k !== 'time' && k !== 'total_fps',
@@ -96,8 +96,15 @@ export function ObjectDetection({ workload }: ObjectProps) {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  FPS (Total: {data?.data.total_fps} fps, Average Per Stream:{' '}
-                  {data?.data.average_fps_per_stream} fps)
+                  FPS (Total:{' '}
+                  {data?.data?.total_fps
+                    ? data.data.total_fps.toFixed(2)
+                    : 'N/A'}{' '}
+                  fps, Average Per Stream:{' '}
+                  {data?.data?.average_fps_per_stream
+                    ? data.data.average_fps_per_stream.toFixed(2)
+                    : 'N/A'}{' '}
+                  fps)
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -121,6 +128,7 @@ export function ObjectDetection({ workload }: ObjectProps) {
                       type="number"
                       domain={['dataMin - 0.5', 'dataMax + 0.5']}
                       allowDecimals
+                      tickFormatter={(value) => value.toFixed(2)}
                     />
                     <ChartTooltip
                       cursor={true}
@@ -133,7 +141,7 @@ export function ObjectDetection({ workload }: ObjectProps) {
                           key={key}
                           dataKey={key}
                           type="monotone"
-                          strokeWidth={2}
+                          strokeWidth={5}
                           dot={false}
                           name={label}
                           stroke={getColorForKey(key)}
@@ -152,16 +160,17 @@ export function ObjectDetection({ workload }: ObjectProps) {
               <CardTitle>Demo: {workload.usecase}</CardTitle>
             </CardHeader>
             <CardContent className="flex h-full items-center space-y-4">
-              <div className="relative aspect-video h-full w-full overflow-hidden rounded-lg bg-black">
-                <Image
-                  alt="dlstreamer-stream"
-                  className="h-full w-full"
-                  src={`/api/stream?port=${workload.port}`}
-                  width={1920}
-                  height={1080}
-                  unoptimized
-                />
-              </div>
+              <MJPEGCanvas workload={workload} />
+              {/*<div className="relative aspect-video h-full w-full overflow-hidden rounded-lg bg-black">*/}
+              {/*  <Image*/}
+              {/*    alt="object_detection"*/}
+              {/*    className="h-full w-full"*/}
+              {/*    src={`/api/stream?port=${workload.port}`}*/}
+              {/*    width={1920}*/}
+              {/*    height={1080}*/}
+              {/*    unoptimized*/}
+              {/*  />*/}
+              {/*</div>*/}
             </CardContent>
           </Card>
         </div>
@@ -172,3 +181,43 @@ export function ObjectDetection({ workload }: ObjectProps) {
     </div>
   )
 }
+
+const MJPEGCanvas = ({ workload }) => {
+  const canvasRef = useRef(null)
+  const imgRef = useRef(null)
+
+  useEffect(() => {
+    console.log('here')
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas?.getContext('2d')
+    const img = new globalThis.Image()
+
+    imgRef.current = img
+    //img.src = `/api/stream?port=${workload.port}` // MJPEG HTTP stream source
+    img.src = `http://localhost:${workload.port}/result`
+    img.crossOrigin = 'anonymous'
+    const draw = () => {
+      if (img.complete && ctx) {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      }
+      requestAnimationFrame(draw)
+    }
+    requestAnimationFrame(draw)
+    return () => {
+      imgRef.current.src = ''
+      imgRef.current = null
+    }
+  }, [workload.port])
+  return (
+    <canvas
+      ref={canvasRef}
+      width={1920}
+      height={1080}
+      className="h-full w-full rounded-lg bg-black"
+    />
+  )
+}
+
+export default MJPEGCanvas

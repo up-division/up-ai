@@ -82,15 +82,57 @@ if %errorlevel% equ 0 (
     winget %git_installer%
 
 )
+:: ======================Install Node.js===================
+echo [Step 4 / %total_step%]
+call %chk_net%
+
+echo Creating shortcut for start and stop scripts
+powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%DESKTOP%\start.lnk'); $s.TargetPath = '%STARTBAT%'; $s.Save()"
+powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%DESKTOP%\stop.lnk'); $s.TargetPath = '%STOPBAT%'; $s.Save()"
+
+echo Checking if Node.js is installed...
+node --version >nul 2>&1
+if %errorlevel% equ 0 (
+    echo Node.js is already installed.
+    node --version
+) else (
+    echo Installing Node.js...
+    winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements --custom INSTALLDIR="C:\NodeJS" && (
+        echo Node.js installed successfully.
+    ) || (
+        echo Failed to install Node.js. Check your internet connection.
+        echo Press any key to exit...
+        pause >nul
+        exit /b
+    )
+)
+REM Disable path length limit for Python
+echo Disabling path length limit...
+set "REG_PATH=HKLM\SYSTEM\CurrentControlSet\Control\FileSystem"
+set "REG_KEY=LongPathsEnabled"
+set "REG_VALUE=1"
+
+REM Check if the registry key exists and set it
+reg query "%REG_PATH%" /v "%REG_KEY%" >nul 2>&1
+if %errorlevel%==0 (
+    reg add "%REG_PATH%" /v "%REG_KEY%" /t REG_DWORD /d %REG_VALUE% /f
+    echo Path length limit disabled
+) else (
+    echo Failed to modify registry. Please check permissions.
+    pause
+)
+
+echo Node.js Installation complete.
+
 
 :: ======================Install Driver===================
-echo [Step 4 / %total_step%]
+echo [Step 5 / %total_step%]
 call %chk_net%
 %install_driver%
 
 
 :: ======================build environment===================
-echo [Step 5 / %total_step%]
+echo [Step 6 / %total_step%]
 call %chk_net%
 %build_env%
 

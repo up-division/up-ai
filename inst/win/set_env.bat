@@ -17,11 +17,14 @@ set vs_installer=%~dp0%\vc_redist.x64.exe
 set py_installer=%~dp0%\python310_installer.exe
 set git_installer=%~dp0%\Git.exe
 )
-set total_step=5
+set total_step=6
 
 set video_path=%~dp0%\..\..\videos
 set model_path=%~dp0%\..\..\models
 
+set "DESKTOP=%USERPROFILE%\Desktop"
+set "STARTBAT=%root_dir%\demos\edge-ai-sizing-tool\start.bat"
+set "STOPBAT=%root_dir%\demos\edge-ai-sizing-tool\\stop.bat"
 
 ::module
 set chk_net=%~dp0%\bat\chk_net.bat

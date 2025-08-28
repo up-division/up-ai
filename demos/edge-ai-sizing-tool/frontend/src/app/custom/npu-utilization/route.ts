@@ -23,7 +23,7 @@ export async function GET() {
   if (npuUtilization.name !== NOT_AVAILABLE) {
     if (isWindows) {
       return NextResponse.json({
-        name: NOT_AVAILABLE,
+        name: npuUtilization.name,
         value: null,
       })
     } else {
