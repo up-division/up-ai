@@ -3,7 +3,7 @@
 
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import {
@@ -160,17 +160,16 @@ export function ObjectDetection({ workload }: ObjectProps) {
               <CardTitle>Demo: {workload.usecase}</CardTitle>
             </CardHeader>
             <CardContent className="flex h-full items-center space-y-4">
-              <MJPEGCanvas workload={workload} />
-              {/*<div className="relative aspect-video h-full w-full overflow-hidden rounded-lg bg-black">*/}
-              {/*  <Image*/}
-              {/*    alt="object_detection"*/}
-              {/*    className="h-full w-full"*/}
-              {/*    src={`/api/stream?port=${workload.port}`}*/}
-              {/*    width={1920}*/}
-              {/*    height={1080}*/}
-              {/*    unoptimized*/}
-              {/*  />*/}
-              {/*</div>*/}
+              <div className="relative aspect-video h-full w-full overflow-hidden rounded-lg bg-black">
+                <Image
+                  alt="object_detection"
+                  className="h-full w-full"
+                  src={`http://localhost:${workload.port}/result`}
+                  width={1920}
+                  height={1080}
+                  unoptimized
+                />
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -181,43 +180,3 @@ export function ObjectDetection({ workload }: ObjectProps) {
     </div>
   )
 }
-
-const MJPEGCanvas = ({ workload }) => {
-  const canvasRef = useRef(null)
-  const imgRef = useRef(null)
-
-  useEffect(() => {
-    console.log('here')
-
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas?.getContext('2d')
-    const img = new globalThis.Image()
-
-    imgRef.current = img
-    //img.src = `/api/stream?port=${workload.port}` // MJPEG HTTP stream source
-    img.src = `http://localhost:${workload.port}/result`
-    img.crossOrigin = 'anonymous'
-    const draw = () => {
-      if (img.complete && ctx) {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-      }
-      requestAnimationFrame(draw)
-    }
-    requestAnimationFrame(draw)
-    return () => {
-      imgRef.current.src = ''
-      imgRef.current = null
-    }
-  }, [workload.port])
-  return (
-    <canvas
-      ref={canvasRef}
-      width={1920}
-      height={1080}
-      className="h-full w-full rounded-lg bg-black"
-    />
-  )
-}
-
-export default MJPEGCanvas
