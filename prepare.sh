@@ -37,13 +37,11 @@ install_git() {
 
 install_driver() {
     echo "Running driver installation script..."
-    python3 $ori_dir/inst/linux/app/scanf_driver.py --install_driver
+    sudo python3 $ori_dir/inst/linux/app/scanf_driver.py --install_driver
     echo "Driver is already installed !"
 }
 
 install_tools() {
-    python3 $ori_dir/inst/linux/app/scanf_driver.py -env -at 1
-    python3 $ori_dir/inst/linux/app/scanf_driver.py -env -at 2
     echo "installing Edge AI Sizing Tool"
     sudo $ori_dir/demos/edge-ai-sizing-tool/install.sh
     cd $ori_dir/demos/edge-ai-sizing-tool
