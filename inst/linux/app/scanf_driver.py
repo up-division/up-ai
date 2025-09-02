@@ -72,14 +72,14 @@ def install_driver(book):
     for find_chip_type_info in book:
         if find_chip_type_info['device_type']=='intel_gpu':
             try:
-                install_script_path = os.path.join(driver_installation_dir, 'install_igpu.sh')
+                install_script_path = os.path.join(driver_installation_dir, 'gpu_installer.sh')
                 os.system(f"bash {install_script_path}")
             except Exception as e:
                 print("install error :")
                 print(e)
         if find_chip_type_info['device_type']=='intel_npu':
             try:
-                install_script_path = os.path.join(driver_installation_dir, 'install_npu.sh')
+                install_script_path = os.path.join(driver_installation_dir, 'npu_installer.sh')
                 os.system(f"bash {install_script_path}")
             except Exception as e:
                 print("install error :")
