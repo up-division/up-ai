@@ -1,48 +1,48 @@
 # Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import argparse
-import cv2
-import logging
-import math
-import numpy as np
 import os
-import sys
 import re
+import sys
+import cv2
+import time
+import math
 import socket
 import signal
+import logging
 import uvicorn
-import threading
-import subprocess as sp
-import requests
-import time
-import urllib.parse
 import zipfile
+import requests
+import argparse
+import threading
+import urllib.parse
+import numpy as np
+import subprocess as sp
 
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 from pathlib import Path
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from yolo_download import export_yolo_model
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse, JSONResponse
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 # Set environment variables to enable dlstreamer
 os.environ["LIBVA_DRIVER_NAME"] = "iHD"
 os.environ["GST_PLUGIN_PATH"] = (
-    "/opt/intel/dlstreamer/build/intel64/Release/lib:/opt/intel/dlstreamer/gstreamer/lib/gstreamer-1.0:/opt/intel/dlstreamer/gstreamer/lib/"
+    "/opt/intel/dlstreamer/lib:/opt/intel/dlstreamer/gstreamer/lib/gstreamer-1.0:/opt/intel/dlstreamer/streamer/lib/"
 )
 os.environ["LD_LIBRARY_PATH"] = (
-    "/opt/intel/dlstreamer/gstreamer/lib:/opt/intel/dlstreamer/build/intel64/Release/lib:/opt/intel/dlstreamer/lib/gstreamer-1.0:/usr/lib:/opt/intel/dlstreamer/build/intel64/Release/lib:/opt/opencv:/opt/openh264:/opt/rdkafka:/opt/ffmpeg:/usr/local/lib/gstreamer-1.0:/usr/local/lib"
+    "/opt/intel/dlstreamer/gstreamer/lib:/opt/intel/dlstreamer/lib:/opt/intel/dlstreamer/lib/gstreamer-1.0:/sr/lib:/opt/intel/dlstreamer/lib:/usr/local/lib/gstreamer-1.0:/usr/local/lib"
 )
 os.environ["LIBVA_DRIVERS_PATH"] = "/usr/lib/x86_64-linux-gnu/dri"
 os.environ["GST_VA_ALL_DRIVERS"] = "1"
 os.environ["PATH"] = (
-    f"/opt/intel/dlstreamer/gstreamer/bin:/opt/intel/dlstreamer/build/intel64/Release/bin:{os.environ['PATH']}"
+    f"/opt/intel/dlstreamer/gstreamer/bin:/opt/intel/dlstreamer/bin:{os.environ['PATH']}"
 )
 
 env = os.environ.copy()
@@ -118,7 +118,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://127.0.0.1:8080", "http://localhost:8080"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -257,7 +257,7 @@ def build_pipeline(
     """
     Build the DLStreamer pipeline for MJPEG streaming.
     """
-    
+
     # Check if input is a videofile
     if input.endswith((".mp4", ".avi", ".mov")):
         source_command = [" multifilesrc", f"location={input}", "loop=true"]
@@ -315,7 +315,7 @@ def build_pipeline(
         f"model={model_full_path}",
         f"device={device}",
     ]
-    
+
     if model_label_path is not None:
         inference_command.append(f"labels-file={model_label_path}")
 
@@ -620,14 +620,16 @@ def main():
         if not model_extract_dir.exists():
             logging.info(f"Extracting {args.model} to {model_extract_dir}")
             try:
-                with zipfile.ZipFile(args.model, 'r') as zip_ref:
+                with zipfile.ZipFile(args.model, "r") as zip_ref:
                     zip_ref.extractall(model_extract_dir)
             except Exception as e:
                 logging.error(f"Failed to extract zip file {args.model}: {e}")
                 update_payload_status(args.id, status="failed")
                 exit(1)
         else:
-            logging.info(f"Model directory {model_extract_dir} already exists, skipping extraction.")
+            logging.info(
+                f"Model directory {model_extract_dir} already exists, skipping extraction."
+            )
         # Find for .xml file
         model_files = list(model_extract_dir.glob("*.xml"))
         if not model_files:
@@ -647,11 +649,11 @@ def main():
             model_status = export_yolo_model(
                 model_name=args.model, model_parent_dir=args.model_parent_dir
             )
-            
+
             if not model_status:
                 update_payload_status(args.id, status="failed")
                 exit(1)
-                
+
             model_full_path = (
                 Path(args.model_parent_dir)
                 / f"{args.model}-{args.model_precision}"
