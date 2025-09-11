@@ -23,7 +23,6 @@ if %errorlevel% equ 0 (
     echo Have Winget 
 ) else (
     call %~dp0%inst\win\winget_install.bat
-    call %refresh%
 )
 
 call %~dp0%inst\win\set_env.bat
