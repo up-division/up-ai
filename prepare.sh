@@ -43,8 +43,8 @@ install_driver() {
 
 install_tools() {
     echo "installing Edge AI Sizing Tool"
-    sudo $ori_dir/demos/edge-ai-sizing-tool/install.sh
     cd $ori_dir/demos/edge-ai-sizing-tool
+    sudo ./install.sh
     ./start.sh
     cd $ori_dirs
 }
@@ -80,8 +80,8 @@ install_min() {
 }
 
 install_git
-install_driver
 install_tools
+install_driver
 #install_min
 
 echo "Enviroment Installation is Complete! Please Reboot!"

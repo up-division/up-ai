@@ -417,7 +417,9 @@ def run_pipeline(pipeline):
     """
     logging.info("Starting GStreamer pipeline...")
     try:
-        process = sp.Popen(pipeline, stdout=sp.PIPE, stderr=sp.PIPE, text=True)
+        env = os.environ.copy() #add
+        env['LD_LIBRARY_PATH'] = '/opt/opencv:' + env.get('LD_LIBRARY_PATH', '') #add
+        process = sp.Popen(pipeline, stdout=sp.PIPE, stderr=sp.PIPE, text=True, env=env)
         # Monitor the pipeline's stdout
         for line in process.stdout:
             logging.info(line.strip())
