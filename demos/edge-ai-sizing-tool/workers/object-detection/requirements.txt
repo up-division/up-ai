@@ -7,7 +7,7 @@ fastapi==0.115.11
 
 openvino
 utils
-torch
+torch==2.7.0
 torchvision
 tqdm
 scikit-learn

@@ -6,3 +6,4 @@ optimum-intel==1.23.0
 accelerate==1.5.1
 diffusers==0.32.2
 huggingface_hub[cli]==0.33.1
+torch==2.7.0
