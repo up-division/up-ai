@@ -133,7 +133,7 @@ def export_yolo_model(model_name, model_parent_dir=MODELS_DIR):
     # Download and convert the model
     model = YOLO(f"{model_name}.pt")
     model.info()
-    converted_path = Path(model.export(format="openvino", dynamic=True, half=True)).resolve()
+    converted_path = Path(model.export(format="openvino", dynamic=False, half=True)).resolve()
 
     # Validate converted_path is within cwd
     if not is_path_safe(Path.cwd(), converted_path):
