@@ -46,7 +46,7 @@ install_tools() {
     cd $ori_dir/demos/edge-ai-sizing-tool
     sudo ./install.sh
     ./start.sh
-    cd $ori_dirs
+    cd $ori_dir
 }
 
 install_min() {

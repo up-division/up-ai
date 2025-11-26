@@ -1,5 +1,11 @@
 #!/bin/bash
 
+tappas_version=$(grep -A1 "^project" "$HOME/tappas/core/hailo/meson.build" | grep "version" | sed -E "s/.*version *: *'([0-9.]+)'.*/\1/")
+
+if [ "$tappas_version" == "3.30.0" ]; then
+    sudo rm -rf "$HOME/tappas"
+fi
+
 echo ====================================================
 echo $'\t'Install Hailo Object Detect Packages
 echo ====================================================
@@ -18,7 +24,7 @@ fi
 
 echo "Install Hailo tappas packages......"
 #install require package
-sudo apt-get install -y rsync ffmpeg x11-utils python3-dev python3-pip python3-setuptools python3-virtualenv python-gi-dev libgirepository1.0-dev gcc-12 g++-12 cmake git libzmq3-dev
+sudo apt-get install -y rsync ffmpeg x11-utils python3-dev python3-pip python3-setuptools python3-virtualenv python-gi-dev libgirepository1.0-dev gcc-12 g++-12 cmake git libzmq3-dev pkg-config
 #install cv
 sudo apt-get install -y libopencv-dev python3-opencv
 #install gstreamer
@@ -26,7 +32,7 @@ sudo apt-get install -y libcairo2-dev libgirepository1.0-dev libgstreamer1.0-dev
 #install pygobject
 sudo apt install -y python3-gi python3-gi-cairo gir1.2-gtk-3.0
 #install tappas
-git clone -b v3.30.0 --depth=1 https://github.com/hailo-ai/tappas.git $HOME/tappas
+git clone -b v5.1.0 --depth=1 https://github.com/hailo-ai/tappas.git $HOME/tappas
 cd $HOME/tappas
 ./install.sh --skip-hailort
 
