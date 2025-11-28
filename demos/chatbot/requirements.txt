@@ -1,4 +1,4 @@
-opencv-python
+opencv-python==4.10.0.84
 #openvino-dev
 #openvino
 openvino-genai>=2024.3.0
@@ -12,13 +12,13 @@ matplotlib>=3.4
 pyyaml
 datasets
 accelerate
-gradio>=4.19
+gradio==4.19
 transformers>=4.38.1
 bitsandbytes
 tiktoken
 transformers_stream_generator
 einops
 onnx
-optimum
-optimum-intel>=1.21.0
+optimum==1.25.3
+optimum-intel==1.23.0
 ipython
