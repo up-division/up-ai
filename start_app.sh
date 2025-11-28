@@ -99,7 +99,7 @@ objv_menu() {
                 source $HOME/.hailo/tappas/tappas_env
                 echo Start Object Detect......
                 cd $HOME/tappas
-                ./apps/h8/gstreamer/general/multistream_detection/multi_stream_detection.sh --show-fps
+                ./apps/detection/detection.sh --show-fps
             else
                 echo This demo environment not install! Please choose again!
                 read -n 1 -s -p "Press any key to continue..."
