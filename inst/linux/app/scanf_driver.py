@@ -84,13 +84,6 @@ def install_driver(book):
             except Exception as e:
                 print("install error :")
                 print(e)
-        if find_chip_type_info['device_type']=='hailo':
-            try:
-                install_script_path = os.path.join(driver_installation_dir, 'install_hailo.sh')
-                os.system(f"bash {install_script_path}")
-            except Exception as e:
-                print("install error :")
-                print(e)
         if find_chip_type_info['device_type']=='nvidia_gpu':
             pass
             try:

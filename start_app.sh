@@ -95,11 +95,11 @@ objv_menu() {
             fi
             ;;
         $hailo_opt)
-            if [ -f "$HOME/.hailo/tappas/tappas_env" ];then
-                source $HOME/.hailo/tappas/tappas_env
+            if [ -d "$PWD/inst/linux/app/hailo-apps-infra/venv_hailo_apps" ];then
+                cd $PWD/inst/linux/app/hailo-apps-infra
+                source setup_env.sh
                 echo Start Object Detect......
-                cd $HOME/tappas
-                ./apps/detection/detection.sh --show-fps
+                hailo-detect --show-fps
             else
                 echo This demo environment not install! Please choose again!
                 read -n 1 -s -p "Press any key to continue..."
