@@ -49,7 +49,7 @@ call %root_dir%/build/hailo-obj_det/Scripts/activate.bat
 pip install wheel
 pip install psutil
 pip install %current_dir%\py_pkg\netifaces-0.11.0-cp310-cp310-win_amd64.whl
-pip install "%ProgramFiles%\HailoRT\python\hailort-4.19.0-cp310-cp310-win_amd64.whl"
+pip install "%ProgramFiles%\HailoRT\python\hailort-4.23.0-cp310-cp310-win_amd64.whl"
 pip install -r %current_dir%\requirements.txt
 echo ========================================================
 echo Hailo objecet detect Environment Installation Completed!

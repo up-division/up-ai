@@ -1,7 +1,7 @@
 [
   {
-    "driver_location": "https://downloadmirror.intel.com/838895/npudriver-32.0.100.3104.zip",
-    "driver_name": "npu.inf",
+    "driver_location": "https://downloadmirror.intel.com/871766/npu_win_32.0.100.4514.exe",
+    "driver_name": "npu_win_32.0.100.4514.exe",
     "vid_pid": [
       {
         "vid": "ven_8086",
@@ -11,7 +11,7 @@
   },
   {
     "driver_location": ".\\drivers\\",
-    "driver_name": "hailort_4.19.0_windows_installer.msi",
+    "driver_name": "hailo_install.bat",
     "vid_pid": [
       {
         "vid": "ven_1E60",

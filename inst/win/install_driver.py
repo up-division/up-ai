@@ -104,7 +104,7 @@ def download_and_extract(url, extract_to='./drivers'):
 def find_driver_in_directory(driver_name, directory='./drivers'):
     for root, _, files in os.walk(directory):
         for file in files:
-            if driver_name in file and file.endswith(('.inf', '.exe', '.msi')):
+            if driver_name in file and file.endswith(('.inf', '.exe', '.msi','bat')):
                 return os.path.join(root, file)
     return None
 
@@ -116,6 +116,12 @@ def install_driver(driver_path):
             result = subprocess.run([driver_path, '/silent'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         elif driver_path.endswith('.msi'):
             result = subprocess.run(['msiexec', '/i', driver_path, '/quiet'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        elif driver_path.endswith('.bat'):
+            
+            abs_bat = os.path.abspath(driver_path)
+            print("Executing BAT:", abs_bat)
+            workdir = os.path.dirname(abs_bat) or os.getcwd()
+            result = subprocess.run(['cmd', '/c', abs_bat],cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,encoding='mbcs', errors='replace',timeout=1800)
         else:
             return f"Error: Unsupported driver file type {driver_path}。"
         

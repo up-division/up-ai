@@ -1,0 +1,3 @@
+echo off
+echo run install hailo 4.23.0.......
+msiexec /i "hailort_4.23.0_windows_installer.msi" INSTALL_ROOT="C:\Program Files\HailoRT" GSTPLUGININSTALL=1 GSTREAMERPLUGINSDIR="C:\GStreamerPlugins" P_HAILORTSERVICE_ENABLE=1 ARPINSTALLLOCATION="C:\Program Files\HailoRT" TARGETDIR="C:\" ADDLOCAL=VCRedist_x64,ProductFeature,VCRedist_x86,CM_C_copyright,CM_C_driver,CM_C_hailonet,CM_C_hailort_service,CM_C_hailort_service_enabling,CM_C_hailortcli,CM_C_headers,CM_C_libhailort,CM_C_pyhailort,CM_C_support /quiet /norestart

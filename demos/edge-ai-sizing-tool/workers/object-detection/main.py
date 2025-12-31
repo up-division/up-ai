@@ -3,6 +3,8 @@
 
 import argparse
 from ast import Global
+from lib2to3.fixes.fix_asserts import NAMES
+from pickle import NONE
 import cv2
 import logging
 import math
@@ -37,8 +39,6 @@ import collections
 from typing import List, Tuple
 from utils.general import scale_boxes, non_max_suppression
 
-
-import xml.etree.ElementTree as ET
 
 core=ov.Core()
 
@@ -442,16 +442,6 @@ def main():
             label_files = list(custom_model_path.glob("*.txt"))
             if label_files:
                 model_label_path = label_files[0]
-
-    global NAMES
-    tree = ET.parse(model_full_path)
-    root = tree.getroot()
-    rt_info = root.find("rt_info")
-    model_info = rt_info.find("model_info")
-    labels_str = model_info.find("labels").attrib["value"]
-    labels_list = labels_str.split()
-
-    NAMES = {i: label for i, label in enumerate(labels_list)}
     
     # Start the pipeline
     logging.info("Starting the pipeline...")
@@ -461,6 +451,7 @@ def main():
                                  flip=False,
                                  skip_first_frames=0,
                                  model=model_full_path,
+                                 model_label_path=model_label_path,
                                  device=args.device)
         
         # opencv_server_image(tcp_port=args.tcp_port,
@@ -614,6 +605,17 @@ def detect(
     pred = non_max_suppression(predictions, conf_thres, iou_thres, classes=classes, agnostic=agnostic_nms)
     return pred, orig_img, input_tensor.shape
 
+
+def load_labels_to_dict(model_label_path):
+    labels_dict = {}
+    with open(model_label_path, 'r', encoding='utf-8') as f:
+        for idx, line in enumerate(f):
+            label = line.strip()
+            if label:
+                labels_dict[idx] = label
+    return labels_dict
+
+
 def draw_boxes(
     predictions: np.ndarray,
     input_shape: Tuple[int],
@@ -640,8 +642,10 @@ def draw_boxes(
 
     # Write results
     for *xyxy, conf, cls in reversed(predictions):
-        label = f"{names.get(int(cls),'Unkown')} {conf:.2f}"        
-
+        if(names!=NONE):
+            label = f"{names.get(int(cls),'Unkown')} {conf:.2f}"
+        else:
+            label = f"{int(cls)} {conf:.2f}"
         annotator.box_label(xyxy, label, color=colors(int(cls), True))
     return image
 
@@ -650,6 +654,7 @@ def run_object_detection(
     flip=False,
     skip_first_frames=0,
     model="",
+    model_label_path: str = None,
     device=args.device,
     video_width: int = None,  # if not set the original size is used
 ):
@@ -657,9 +662,23 @@ def run_object_detection(
     player = None
     
     ov_model = core.read_model(model)
-
-    global NAMES
+    
+    NAMES=NONE
+    
     compiled_model = core.compile_model(ov_model, device)
+
+    
+    if model_label_path is None:
+
+        if("model_info" in ov_model.rt_info and "labels" in ov_model.rt_info["model_info"]):
+           labels_list = ov_model.rt_info["model_info"]["labels"].value.split()
+           NAMES = {idx: label for idx, label in enumerate(labels_list)}
+        # elif("model_info" in model.rt_info and "labels" in model.rt_info["model_info"]):
+        #     labels_list = ov_model.rt_info["model_info"]["labels"].value.split()
+        #     NAMES = {idx: label for idx, label in enumerate(labels_list)}   
+        pass   
+    else:
+        NAMES=load_labels_to_dict(model_label_path)
     
     try:
         while True:
