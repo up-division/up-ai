@@ -23,7 +23,7 @@ else
 fi
 
 sudo apt update
-sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev liblzma-dev libbz2-dev libnss3-dev libssl-dev libreadline-dev libffi-dev wget python3-venv
+sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev liblzma-dev libbz2-dev libnss3-dev libssl-dev libreadline-dev libffi-dev wget python3-venv python3-gi python3-gi-cairo gir1.2-gtk-4.0
 
 install_git() {
     echo "Install git now......"
@@ -80,8 +80,8 @@ install_min() {
 }
 
 install_git
-install_tools
-install_driver
+# install_tools
+# install_driver
 #install_min
 
 echo "Enviroment Installation is Complete! Please Reboot!"

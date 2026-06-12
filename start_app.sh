@@ -95,11 +95,17 @@ objv_menu() {
             fi
             ;;
         $hailo_opt)
-            if [ -d "$PWD/inst/linux/app/hailo-apps-infra/venv_hailo_apps" ];then
+            if [ -d "$PWD/inst/linux/app/hailo-apps/venv_hailo10_apps" ];then
+                cd $PWD/inst/linux/app/hailo-apps
+                source $PWD/venv_hailo10_apps/bin/activate
+                echo Start Object Detect......
+                # Hide the error when closing the window
+                hailo-detect --arch hailo10h --show-fps 2>&1 | grep -vE "Output window was closed|Exiting with error|Shutdown initiated"
+            elif [ -d "$PWD/inst/linux/app/hailo-apps-infra/venv_hailo_apps" ];then
                 cd $PWD/inst/linux/app/hailo-apps-infra
                 source setup_env.sh
                 echo Start Object Detect......
-                hailo-detect --show-fps
+                hailo-detect --arch hailo8 --show-fps
             else
                 echo This demo environment not install! Please choose again!
                 read -n 1 -s -p "Press any key to continue..."
