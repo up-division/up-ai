@@ -30,6 +30,10 @@ if [ -d "$PWD/inst/linux/app/hailo-apps/venv_hailo10_apps" ];then
     fi
 fi
 
+sudo apt update
+sudo apt install -y dkms libzmq5 ffmpeg pkg-config libcairo2-dev libgirepository1.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libzmq3-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-bad gstreamer1.0-libav
+sudo apt-get -y --fix-broken install
+
 # Hailo Chip ID: 2864 -> Hailo 8 ; 45c4 -> Hailo 10
 HAS_HAILO10=false
 HAS_HAILO8=false
@@ -63,6 +67,9 @@ case "$UBUNTU_VER" in
                 cd $PWD/inst/linux/app/hailo-apps
                 pip install -e .
                 sudo $(which hailo-post-install)
+                
+                sudo chmod -R a+r /usr/local/hailo/resources/models
+                sudo chmod -R a+r /usr/local/hailo/resources/videos
             elif $HAS_HAILO8; then
                 echo Hailo 8 detected!
                 git clone -b v25.10.0 --depth=1 https://github.com/hailo-ai/hailo-apps-infra.git $PWD/inst/linux/app/hailo-apps-infra
