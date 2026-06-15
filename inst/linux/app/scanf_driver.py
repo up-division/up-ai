@@ -1,16 +1,18 @@
 import os
 import subprocess
 import argparse
-ven_ls={'intel':'8086','hailo':'1e60','nvidia':'10de'}
+ven_ls={'intel':'8086','hailo':'1e60','nvidia':'10de','deepx':'1ff4'}
 intel_gpuid=['7d55','46d1','a780']
 intel_npuid=['7d1d']
 hailo_chipid=['2864']
 nvidia_chipid=['24fa']
+deepx_chipid=['0000']
 device_book = [
     {"device_type": "intel_gpu", "ven_id": ven_ls['intel'], "sup_chip_ls": intel_gpuid},
     {"device_type": "intel_npu", "ven_id": ven_ls['intel'], "sup_chip_ls": intel_npuid},
     {"device_type": "hailo",     "ven_id": ven_ls['hailo'], "sup_chip_ls": hailo_chipid},
-    {"device_type": "nvidia_gpu","ven_id": ven_ls['nvidia'], "sup_chip_ls": nvidia_chipid}
+    {"device_type": "nvidia_gpu","ven_id": ven_ls['nvidia'], "sup_chip_ls": nvidia_chipid},
+    {"device_type": "deepx_npu","ven_id": ven_ls['deepx'], "sup_chip_ls": deepx_chipid}
 ]
 version='alpha'
 
@@ -21,6 +23,7 @@ version='alpha'
 # intel_npu  |8086  |['7D1D']
 # hailo      |8086  |['2864']
 # nvidia_gpu |8086  |['24FA']
+# deepx_npu  |1ff4  |['0000']
 # =========================================
 
 def arg_parser():
@@ -70,6 +73,13 @@ def install_driver(book):
     driver_installation_dir=os.path.join(os.getcwd(),'inst', 'linux', 'app')
     
     for find_chip_type_info in book:
+        if find_chip_type_info['device_type']=='deepx_npu':
+            try:
+                install_script_path = os.path.join(driver_installation_dir, 'install_DeepX_M1.sh')
+                os.system(f"bash {install_script_path}")
+            except Exception as e:
+                print("install error :")
+                print(e)
         if find_chip_type_info['device_type']=='intel_npu':
             try:
                 install_script_path = os.path.join(driver_installation_dir, 'DLS_install_prerequisites.sh')
@@ -92,6 +102,7 @@ def install_driver(book):
             except Exception as e:
                 print("install error :")
                 print(e)
+
 
 def build_runspace(book,build_demo_type):
     env_dir=os.path.join(os.getcwd(),'inst', 'linux', 'env_list')

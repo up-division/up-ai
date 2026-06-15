@@ -62,6 +62,12 @@ objv_menu() {
         ((index++))
     fi
 
+    if lspci | grep -iq "DEEPX"; then
+        dev_option+=("$index. DeepX Device")
+        deepx_opt=$index
+        ((index++))
+    fi
+
     if [ ${#dev_option[@]} -gt 0 ]; then
         index=1
         for device in "${dev_option[@]}"; do
@@ -112,6 +118,22 @@ objv_menu() {
                 source inst/linux/env/obj_cuda/bin/activate
                 echo Start Object Detect......
                 python3 $PWD/inst/linux/app/pytorch/yolov11_predict.py ../videos/obj_video.mp4
+                cd $ori_dir
+            else
+                echo This demo environment not install! Please choose again!
+                read -n 1 -s -p "Press any key to continue..."
+                clear
+                objv_menu
+            fi
+            ;;
+        $deepx_opt)
+            if [ -f "$PWD/demos/dx-all-suite/dx-runtime/venv-dx-runtime/bin/activate" ];then
+                source demos/dx-all-suite/dx-runtime/venv-dx-runtime/bin/activate
+                echo Start Object Detect......
+                $PWD/demos/dx-all-suite/dx-runtime/dx_app/run_demo.sh --task 0 --mode 4 --input 1
+                # task 0 => object detection
+                # mode 4 => python async
+                # input 1 => video
                 cd $ori_dir
             else
                 echo This demo environment not install! Please choose again!
