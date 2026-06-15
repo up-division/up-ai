@@ -51,7 +51,9 @@ case "$UBUNTU_VER" in
                 sudo dpkg -i $PWD/inst/linux/app/driver/hailo/hailort_5.3.0_amd64.deb
                 sudo dpkg -i $PWD/inst/linux/app/driver/hailo/hailo-tappas-core_5.3.0_amd64.deb
 
-                git clone https://github.com/hailo-ai/hailo-apps.git $PWD/inst/linux/app/hailo-apps
+                if [ ! -d "$PWD/inst/linux/app/hailo-apps/.git" ]; then
+                    git clone https://github.com/hailo-ai/hailo-apps.git "$PWD/inst/linux/app/hailo-apps"
+                fi
 
                 python3 -m venv --system-site-packages $PWD/inst/linux/app/hailo-apps/venv_hailo10_apps
                 source $PWD/inst/linux/app/hailo-apps/venv_hailo10_apps/bin/activate 
@@ -60,7 +62,7 @@ case "$UBUNTU_VER" in
                 pip install --upgrade pip
                 cd $PWD/inst/linux/app/hailo-apps
                 pip install -e .
-                hailo-post-install
+                sudo $(which hailo-post-install)
             elif $HAS_HAILO8; then
                 echo Hailo 8 detected!
                 git clone -b v25.10.0 --depth=1 https://github.com/hailo-ai/hailo-apps-infra.git $PWD/inst/linux/app/hailo-apps-infra
