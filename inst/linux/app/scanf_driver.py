@@ -8,11 +8,11 @@ hailo_chipid=['2864']
 nvidia_chipid=['24fa']
 deepx_chipid=['0000']
 device_book = [
+    {"device_type": "deepx_npu","ven_id": ven_ls['deepx'], "sup_chip_ls": deepx_chipid},
     {"device_type": "intel_gpu", "ven_id": ven_ls['intel'], "sup_chip_ls": intel_gpuid},
     {"device_type": "intel_npu", "ven_id": ven_ls['intel'], "sup_chip_ls": intel_npuid},
     {"device_type": "hailo",     "ven_id": ven_ls['hailo'], "sup_chip_ls": hailo_chipid},
-    {"device_type": "nvidia_gpu","ven_id": ven_ls['nvidia'], "sup_chip_ls": nvidia_chipid},
-    {"device_type": "deepx_npu","ven_id": ven_ls['deepx'], "sup_chip_ls": deepx_chipid}
+    {"device_type": "nvidia_gpu","ven_id": ven_ls['nvidia'], "sup_chip_ls": nvidia_chipid}
 ]
 version='alpha'
 
