@@ -15,6 +15,10 @@
     "vid_pid": [
       {
         "vid": "ven_1E60",
+        "pid": "dev_45C4"
+      },
+      {
+        "vid": "ven_1E60",
         "pid": "dev_2864"
       }
     ]

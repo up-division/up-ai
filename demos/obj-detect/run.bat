@@ -11,13 +11,14 @@ if not defined root_dir (
 
 set "hailodemoDir=%currentDir%\app\hailo\detection_with_tracker"
 set "matched_instances=Intel;"
+set "Hailo10h=45C4"
 set "Hailo8=2864"
 set "Hailo8l=2864"
 set "Nvidia=24FA"
 set "tempfile=%temp%\pnputil_output.txt"
 
 pnputil /enum-devices /connected > "%tempfile%"
-set "com_instance_ids=Hailo8;Hailo8l;Nvidia"
+set "com_instance_ids=Hailo10h;Hailo8;Hailo8l;Nvidia"
 set "chatbot_matched_instances=!matched_instances!"
 set "obj_matched_instances=!matched_instances!"
 
@@ -86,26 +87,36 @@ if "!demotype!"=="Intel" (
     )
     echo Start Object Detect......
     python %current_dir%\intel\demo.py %root_dir%\videos\obj_video.mp4
+) else if "!demotype!"=="Hailo10h" (
+    if exist "%root_dir%/build/hailo_10h-obj_det/Scripts/activate.bat" (
+        call %root_dir%/build/hailo_10h-obj_det/Scripts/activate.bat
+    ) else (
+        echo This demo environment not install, please rechoose!
+        pause
+        goto obj_detect
+    )
+    echo Start detection with Hailo 10...
+    python %current_dir%\hailo\hailo_10h\hailo_apps\python\standalone_apps\object_detection\object_detection.py -n %root_dir%\models\yolov5m_wo_spp.hef -i %root_dir%\videos\hailo_video.mp4
 ) else if "!demotype!"=="Hailo8" (
-    if exist "%root_dir%/build/hailo-obj_det/Scripts/activate.bat" (
-        call %root_dir%/build/hailo-obj_det/Scripts/activate.bat
+    if exist "%root_dir%/build/hailo_8-obj_det/Scripts/activate.bat" (
+        call %root_dir%/build/hailo_8-obj_det/Scripts/activate.bat
     ) else (
         echo This demo environment not install, please rechoose!
         pause
         goto obj_detect
     )
     echo Start detection with tracker...
-    python %current_dir%\hailo\detection_with_tracker.py -n %root_dir%\models\yolov5m_wo_spp_60p.hef -i %root_dir%\videos\hailo_video.mp4 -l %current_dir%\hailo\coco.txt
-    ) else if "!demotype!"=="Hailo8l" (
-    if exist "%root_dir%/build/hailo-obj_det/Scripts/activate.bat" (
-        call %root_dir%/build/hailo-obj_det/Scripts/activate.bat
+    python %current_dir%\hailo\hailo_8\detection_with_tracker.py -n %root_dir%\models\yolov5m_wo_spp_60p.hef -i %root_dir%\videos\hailo_video.mp4 -l %current_dir%\hailo\coco.txt
+) else if "!demotype!"=="Hailo8l" (
+    if exist "%root_dir%/build/hailo_8-obj_det/Scripts/activate.bat" (
+        call %root_dir%/build/hailo_8-obj_det/Scripts/activate.bat
     ) else (
         echo This demo environment not install, please rechoose!
         pause
         goto obj_detect
     )
     echo Start detection with tracker...
-    python %current_dir%\hailo\detection_with_tracker.py -n %root_dir%\models\yolov5m_wo_spp_hailo8l.hef -i %root_dir%\videos\hailo_video.mp4 -l %current_dir%\hailo\coco.txt
+    python %current_dir%\hailo\hailo_8\detection_with_tracker.py -n %root_dir%\models\yolov5m_wo_spp_hailo8l.hef -i %root_dir%\videos\hailo_video.mp4 -l %current_dir%\hailo\coco.txt
 ) else if "!demotype!"=="Nvidia" (
     if exist "%root_dir%/build/torch_yolov11/Scripts/activate.bat" (
         call %root_dir%/build/torch_yolov11/Scripts/activate.bat

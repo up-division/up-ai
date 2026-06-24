@@ -61,7 +61,7 @@ if %errorlevel% equ 0 (
     )
     %py_installer% /quite InstallAllUsers=1 PrependPath=1 Include_test=0 /passive
     call %refresh%
-    pip install -r requirements.txt
+    pip install -r %root_dir%\requirements.txt
 )
 
 :: ======================Install git===================
@@ -85,9 +85,11 @@ if %errorlevel% equ 0 (
     winget %vs_installer%
     echo [Step 2 / %total_step%]
     winget %py_installer%
+    call %refresh%
+    pip install -r %root_dir%\requirements.txt
     echo [Step 3 / %total_step%]
     winget %git_installer%
-
+    call %refresh%
 )
 call %refresh%
 :: ======================Install Node.js===================

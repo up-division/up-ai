@@ -10,7 +10,7 @@ echo Windows package-manager supported.
 set winpkg=1
 set vs_installer=install -e --id Microsoft.VCRedist.2015+.x64
 set py_installer=install -e --id Python.Python.3.10
-set git_installer=Git.Git --override "/SP /SUPPRESSMSGBOXES /NORESTART /ALLUSERS"
+set git_installer=install -e --id Git.Git --override "/SILENT /SP /SUPPRESSMSGBOXES /NORESTART /ALLUSERS"
 ) else (
 set winpkg=0
 set vs_installer=%~dp0%vc_redist.x64.exe

@@ -36,7 +36,10 @@ def get_filename_from_cd(cd):
 
 def detect_hardware_by_multiple_pid_vid(targets):
     try:
-        result = subprocess.run(['wmic', 'path', 'win32_pnpentity', 'get', 'deviceid'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        # result = subprocess.run(['wmic', 'path', 'win32_pnpentity', 'get', 'deviceid'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        cmd = ['powershell', '-NoProfile', '-Command', 'Get-CimInstance Win32_PnPEntity | Select-Object -ExpandProperty DeviceID']
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
         if result.returncode != 0:
             return "Error: Unable to detect hardware information。"
         
