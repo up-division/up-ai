@@ -47,17 +47,22 @@ echo Install hailo 10h objecet detect packages
 echo ========================================
 py -3.10 -m venv %root_dir%/build/hailo_10h-obj_det
 call %root_dir%/build/hailo_10h-obj_det/Scripts/activate.bat
+python -m pip install --upgrade pip
 pip install "C:\Program Files\HailoRT\python\hailort-5.3.2-cp310-cp310-win_amd64.whl"
 git clone https://github.com/hailo-ai/hailo-apps.git "%root_dir%\demos\obj-detect\hailo\hailo_10h"
 python %current_dir%\patch_toolbox.py
-winget install --id Microsoft.VisualStudio.2022.BuildTools ^
---override "--quiet --wait --norestart --nocache ^
---add Microsoft.VisualStudio.Workload.VCTools ^
---add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 ^
---add Microsoft.VisualStudio.Component.Windows10SDK.19041" ^
---accept-source-agreements ^
---accept-package-agreements
-start /wait "" "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify --installPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools" --add Microsoft.VisualStudio.Component.VC.140 --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --passive --norestart
+echo Installing Visual Studio 2022 Build Tools...
+winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows10SDK.19041" --accept-source-agreements --accept-package-agreements
+if exist "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vs_installer.exe" (
+    start /wait "" "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vs_installer.exe" modify --installPath "%ProgramFiles%\Microsoft Visual Studio\2022\BuildTools" --add Microsoft.VisualStudio.Component.VC.140 --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --passive --norestart
+)
+set "VS_VARS_BAT=%ProgramFiles%\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+if exist "%VS_VARS_BAT%" (
+    call "%VS_VARS_BAT%"
+) else (
+    echo [WARNING] VS 2022 vcvars64.bat not found. Please check VS Installation.
+)
+@REM start /wait "" "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify --installPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools" --add Microsoft.VisualStudio.Component.VC.140 --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --passive --norestart
 cd %root_dir%\demos\obj-detect\hailo\hailo_10h\hailo_apps\python\standalone_apps\object_detection
 pip install -r %current_dir%\hailo_10h\hailo_apps\python\standalone_apps\object_detection\requirements.txt
 echo ========================================================
