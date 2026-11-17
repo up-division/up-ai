@@ -300,7 +300,12 @@ def main(argv):
     print("select you wanted model:\n")
     for i in range(0,len(model_list)):
         print(str(i) +" : "   + model_list[i])
-    model_sel=int(input())
+    while True:
+        model_sel_input=input("Please input number: ").strip()
+        if model_sel_input.isdigit() and 0 <= int(model_sel_input) < len(model_list):
+            model_sel=int(model_sel_input)
+            break
+        print("Not invild input!!!!!!!!!!!!!!!!!")
     model_id=model_list[model_sel]
     model_configuration=have_model[str(model_list[model_sel])]
 
@@ -333,8 +338,8 @@ def main(argv):
         print(str(index)+"."+"AUTO")
         device_dict[str(index)]="AUTO"
     
-        sel_dev=input()
-        if(int(sel_dev)>0 and int(sel_dev) <= index):
+        sel_dev=input("Please input number: ").strip()
+        if(sel_dev.isdigit() and int(sel_dev)>0 and int(sel_dev) <= index):
             print("select " +device_dict[str(sel_dev)]+ " to running" )
             break
         else:

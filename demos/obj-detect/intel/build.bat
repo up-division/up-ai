@@ -5,14 +5,14 @@ call %current_dir%\..\..\..\inst\win\set_env.bat
 if  not defined root_dir (
     echo  Please call set_env.bat to set the environment variables
     pause
-    exit
+    exit /b
 )
 
 if exist "%root_dir%\build\ov-obj_det" (
     echo The Demo env already exists. Do you want to delete it?
     choice /c yn /m "Please choose (y/n):"
     if errorlevel 2 (
-        exit
+        exit /b
     ) else (
         rmdir /S /Q %root_dir%\build\ov-obj_det
     )
@@ -25,8 +25,14 @@ echo ========================================
 py -3.10 -m venv %root_dir%/build/ov-obj_det
 call %root_dir%/build/ov-obj_det/Scripts/activate.bat
 
-pip install psutil
-pip install -r  %current_dir%\requirements.txt
+python -m pip install psutil
+if errorlevel 1 (
+    echo [WARNING] Failed to install psutil. The demo environment may be incomplete.
+)
+python -m pip install -r  %current_dir%\requirements.txt
+if errorlevel 1 (
+    echo [WARNING] Failed to install packages from requirements.txt. The demo environment may be incomplete.
+)
 
 echo ===============================================
 echo Openvino Objecet Detect Installation Completed!
@@ -46,4 +52,4 @@ if exist "%root_dir%\videos\obj_video.mp4" (
 )
 echo "Download openvino objecet detect data Completed!"
 pause
-exit
+exit /b

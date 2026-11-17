@@ -501,8 +501,11 @@ def quest_device_usage():
                 cpu_read_ok = psutil.cpu_percent(interval=1, percpu=True)
                 device_usage['CPU'] = cpu_read_ok
             elif os.name == 'nt':   # windows
-                cpu_read_ok = dll.GetCPUUsage(cpu_use,cpu_num)
-                device_usage['CPU'] = list(cpu_use[:cpu_num])
+                if dll is not None:
+                    cpu_read_ok = dll.GetCPUUsage(cpu_use,cpu_num)
+                    device_usage['CPU'] = list(cpu_use[:cpu_num])
+                else:
+                    device_usage['CPU'] = psutil.cpu_percent(interval=None, percpu=True)
             else :
                 break
         if show_device['Memory']:
@@ -514,8 +517,12 @@ def quest_device_usage():
                 device_usage['program_memory']['use_mem']=program_memory.rss/(1024*1024*1024)
                 device_usage['program_memory']['use_per']=device_usage['program_memory']['use_mem']/device_usage['ALL_memory']['tot_mem']
             elif os.name == 'nt':
-                mem_read_ok = dll.GetMemoryUsage(ctypes.byref(mem_use_c))
-                device_usage['ALL_memory']['use_mem']=mem_use_c.value/1000#/100
+                if dll is not None:
+                    mem_read_ok = dll.GetMemoryUsage(ctypes.byref(mem_use_c))
+                    device_usage['ALL_memory']['use_mem']=mem_use_c.value/1000#/100
+                else:
+                    mem_read_ok = psutil.virtual_memory()
+                    device_usage['ALL_memory']['use_mem']=mem_read_ok.used/(1024*1024*1024)
                 device_usage['ALL_memory']['use_per']=device_usage['ALL_memory']['use_mem']/device_usage['ALL_memory']['tot_mem']
                 program_memory = program_process.memory_info()
                 device_usage['program_memory']['use_mem']=program_memory.rss/(1024*1024*1024)
@@ -815,8 +822,19 @@ def run_object_detection(
         tot_mem=psutil.virtual_memory().total
         tot_mem=tot_mem/(1024*1024*1024)
     if os.name == 'nt':
-        dll = ctypes.CDLL(now_dir+r'\AaeonHWUsage.dll')
-        cpu_num=dll.GetCoreCount()
+        try:
+            # Suppress the OS-level "Bad Image" dialog so a failed LoadLibrary
+            # surfaces as a catchable OSError instead of a blocking popup.
+            prev_error_mode = ctypes.windll.kernel32.SetErrorMode(0x0001 | 0x0002 | 0x8000)
+            try:
+                dll = ctypes.CDLL(now_dir+r'\AaeonHWUsage.dll')
+            finally:
+                ctypes.windll.kernel32.SetErrorMode(prev_error_mode)
+            cpu_num=dll.GetCoreCount()
+        except OSError as e:
+            print(f"AaeonHWUsage.dll unavailable ({e}); falling back to psutil for CPU/memory usage.")
+            dll = None
+            cpu_num = psutil.cpu_count(logical=True)
         tot_mem=c_uint()
         tot_mem=psutil.virtual_memory().total
         tot_mem=tot_mem/(1024*1024*1024)
@@ -1000,8 +1018,8 @@ def main(argv):
         print(str(index)+"."+"AUTO")
         device_dict[str(index)]="AUTO"
     
-        sel_dev=input()
-        if(int(sel_dev)>0 and int(sel_dev) <= index):
+        sel_dev=input("Please input number: ").strip()
+        if(sel_dev.isdigit() and int(sel_dev)>0 and int(sel_dev) <= index):
             print("select " +device_dict[str(sel_dev)]+ " to running" )
             break
         else:

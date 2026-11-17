@@ -1,6 +1,6 @@
 @echo off
 
-start %~dp0%\hailo\build.bat
-start %~dp0%\intel\build.bat
-start %~dp0%\nvdia\build.bat
+call %~dp0%\hailo\build.bat
+call %~dp0%\intel\build.bat
+call %~dp0%\nvdia\build.bat
 exit

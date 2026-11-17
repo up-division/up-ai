@@ -6,7 +6,7 @@ call %current_dir%\..\..\inst\win\set_env.bat
 if  not defined root_dir (
     echo  Please call set_env.bat to set the environment variables
     pause
-    exit
+    exit /b
 )
 
 if exist "%root_dir%\build\ov-chatbot" (
@@ -26,8 +26,11 @@ echo =====================================
 py -3.10 -m venv %root_dir%/build/ov-chatbot
 call %root_dir%/build/ov-chatbot/Scripts/activate.bat
 
-@REM pip install onnx==1.16.1
-pip install -r %current_dir%\requirements.txt
+@REM python -m pip install onnx==1.16.1
+python -m pip install -r %current_dir%\requirements.txt
+if errorlevel 1 (
+    echo [WARNING] Failed to install packages from requirements.txt. The demo environment may be incomplete.
+)
 
 echo ===========================================
 echo Chatbot Environment Installation Completed!
@@ -43,4 +46,4 @@ if not exist "%current_dir%\tiny-llama-1b-chat\" (
 %download_file% -url "https://aaeon365-my.sharepoint.com/:u:/g/personal/junyinglai_aaeon_com_tw/ERzwCuBCBbZNh0-08aTXsj4BpZyy0o0X2NoZBUbrxGtbCQ?e=8ANs3B" -o %current_dir%\tiny-llama-1b-chat\
 
 pause
-exit
+exit /b

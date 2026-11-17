@@ -7,12 +7,14 @@ tqdm
 scikit-learn
 pandas
 seaborn
-nncf>=2.8.1
+nncf>=2.8.1,<3.0.0
 matplotlib>=3.4
 pyyaml
 datasets
 accelerate
 gradio==4.19
+fastapi==0.110.0
+starlette==0.36.3
 transformers>=4.38.1
 bitsandbytes
 tiktoken
